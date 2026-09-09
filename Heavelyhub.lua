@@ -305,32 +305,147 @@ Main:CreateSection("Statue")
 Main:CreateButton({
     Name = "Find Statue (60% Spawn)",
     Callback = function()
+        for _, v in pairs(workspace.Idols:GetDescendants()) do
+            if v.Name == "Bag" or v.Name == "SafetyStatue" then
+                if v:FindFirstChild("hit") and root() then
+                    v.hit.CanCollide = false
+                    v.hit.Transparency = 1
+
+                    task.wait()
+
+                    v.hit.Position = root().Position
+
+                    task.wait()
+                end
+            end
+        end
     end
 })
 
 Main:CreateButton({
-    Name = "Find Statue Immediately",
+    Name = "Auto Get Statue",
     Callback = function()
+        task.spawn(function()
+            for _ = 1, 50 do
+                grabStatue()
+                task.wait(0.05)
+            end
+        end)
     end
+})
+
 })
 
 Main:CreateButton({
     Name = "Detect who has Statue",
     Callback = function()
+        local s = season()
+        local idol = s
+            and s:FindFirstChild("Twists")
+            and s.Twists:FindFirstChild("Idol")
+
+        if not idol or idol.Value == "" then
+            notify(
+                "Statue Owner",
+                "Nobody has the statue yet."
+            )
+            return
+        end
+
+        notify(
+            "Statue Owner",
+            tostring(idol.Value)
+        )
     end
 })
 
 Main:CreateToggle({
     Name = "Bag ESP",
     CurrentValue = false,
+
     Callback = function(Value)
+        local idols = workspace:FindFirstChild("Idols")
+        if not idols then
+            return
+        end
+
+        for _, bag in ipairs(idols:GetDescendants()) do
+            if bag.Name == "Bag" and bag:IsA("Model") then
+                local old = bag:FindFirstChild("HeavelyBagESP")
+
+                if Value and not old then
+                    local p = bag.PrimaryPart
+                        or bag:FindFirstChildWhichIsA("BasePart")
+
+                    if p then
+                        local h = Instance.new("Highlight")
+                        h.Name = "HeavelyBagESP"
+                        h.FillTransparency = 1
+                        h.OutlineColor = Color3.new(1, 1, 1)
+                        h.Parent = bag
+
+                        local bb = Instance.new("BillboardGui")
+                        bb.Name = "HeavelyBagLabel"
+                        bb.Size = UDim2.new(0, 180, 0, 40)
+                        bb.StudsOffset = Vector3.new(0, 3, 0)
+                        bb.AlwaysOnTop = true
+                        bb.Adornee = p
+                        bb.Parent = bag
+
+                        local t = Instance.new("TextLabel")
+                        t.Size = UDim2.fromScale(1, 1)
+                        t.BackgroundTransparency = 1
+                        t.Text = "BAG"
+                        t.TextColor3 = Color3.new(1, 1, 1)
+                        t.TextStrokeTransparency = 0
+                        t.TextScaled = true
+                        t.Font = Enum.Font.GothamBold
+                        t.Parent = bb
+                    end
+
+                elseif not Value then
+                    if old then
+                        old:Destroy()
+                    end
+
+                    local label = bag:FindFirstChild("HeavelyBagLabel")
+                    if label then
+                        label:Destroy()
+                    end
+                end
+            end
+        end
     end
 })
 
 Main:CreateToggle({
     Name = "Safety Statue ESP",
     CurrentValue = false,
+
     Callback = function(Value)
+        local idols = workspace:FindFirstChild("Idols")
+        if not idols then
+            return
+        end
+
+        for _, statue in ipairs(idols:GetDescendants()) do
+            if statue.Name == "SafetyStatue"
+                and statue:IsA("Model") then
+
+                local old = statue:FindFirstChild("HeavelyStatueESP")
+
+                if Value and not old then
+                    local highlight = Instance.new("Highlight")
+                    highlight.Name = "SAFETY STATUE"
+                    highlight.FillTransparency = 1
+                    highlight.OutlineColor = Color3.new(1, 1, 1)
+                    highlight.Parent = statue
+
+                elseif not Value and old then
+                    old:Destroy()
+                end
+            end
+        end
     end
 })
 
@@ -339,20 +454,110 @@ Main:CreateSection("Extras")
 Main:CreateButton({
     Name = "Fling / Restart Day",
     Callback = function()
+        loadstring(game:HttpGet(
+            "https://raw.githubusercontent.com/robloxcheatck/reanimatescript/main/script.lua",
+            true
+        ))()
     end
 })
+
+local autoRoundConn
 
 Main:CreateToggle({
     Name = "Auto Detect Round",
     CurrentValue = false,
+
     Callback = function(Value)
+        if autoRoundConn then
+            autoRoundConn:Disconnect()
+            autoRoundConn = nil
+        end
+
+        if not Value then
+            return
+        end
+
+        pcall(function()
+            local t = RS.Season.Twists:FindFirstChild("CurrentTwist")
+
+            if not t then
+                return
+            end
+
+            autoRoundConn = t:GetPropertyChangedSignal("Value"):Connect(function()
+                local roundNames = {
+                    Undecided = "Round not decided yet - the twist hasn't been set.",
+                    normal = "Normal Round - nothing special yet.",
+                    purge = "Special Round! - This will be a purge round.",
+                    double = "Special Round! - Two people will be eliminated.",
+                    singleswap = "Special Round - SIKE! Eliminated player gets swapped to another team.",
+                    exile = "Special Round! - There will be an exile vote.",
+                    votereveal = "Special Round! - Kyle will expose the votes this round, vote random!"
+                }
+
+                local content = roundNames[t.Value]
+
+                if content then
+                    notify("Round Detected", content)
+                end
+            end)
+        end)
     end
 })
 
-Main:CreateToggle({
+Main:CreateButton({
     Name = "Detect Teamers",
-    CurrentValue = false,
-    Callback = function(Value)
+    Callback = function()
+        local season = RS:FindFirstChild("Season")
+        local playersFolder = season
+            and season:FindFirstChild("Players")
+
+        if not playersFolder then
+            return
+        end
+
+        local function getInGameName(player)
+            local data = playersFolder:FindFirstChild(player.Name)
+
+            if data and data.Value ~= "" then
+                return data.Value
+            end
+
+            return player.Name
+        end
+
+        local found = false
+        local allPlayers = Players:GetPlayers()
+
+        for i, p1 in ipairs(allPlayers) do
+            for j, p2 in ipairs(allPlayers) do
+                if j > i then
+                    local ok, friends = pcall(function()
+                        return p1:IsFriendsWith(p2.UserId)
+                    end)
+
+                    if ok and friends then
+                        found = true
+
+                        notify(
+                            "Teamer Detected!",
+                            getInGameName(p1)
+                                .. " is teaming with "
+                                .. getInGameName(p2)
+                        )
+
+                        task.wait(0.6)
+                    end
+                end
+            end
+        end
+
+        if not found then
+            notify(
+                "No Teamers Found",
+                "No friend pairs detected in this lobby."
+            )
+        end
     end
 })
 
