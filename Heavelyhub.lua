@@ -1,26 +1,111 @@
 --========================================================--
 -- HEAVELY HUB
--- TOTAL ROBLOX DRAMA • CAMP
--- COMPLETE UI SKELETON
---
--- Uses:
--- Luna-Interface-Suite/source.lua_no_interface_hidden.lua
---
+-- Total Roblox Drama
 -- CAMP ONLY
--- NO MOVIES
--- NO EXPEDITION
--- NO AUTOPLAY
--- NO ASCII
+-- Full LunaUI Skeleton
+-- UI + Safe Callback Wrapper
+-- NO FEATURE IMPLEMENTATIONS
 --========================================================--
 
---========================================================--
--- LUNA
---========================================================--
-
+--// LunaUI
 local Luna = loadstring(game:HttpGet(
-    "https://raw.githubusercontent.com/infinitescripts-cloud/Luna-Interface-Suite/master/source.lua_no_interface_hidden.lua",
+    "https://raw.nebulasoftworks.xyz/luna",
     true
 ))()
+
+--========================================================--
+-- SERVICES
+--========================================================--
+
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local LocalPlayer = Players.LocalPlayer
+
+--========================================================--
+-- NOTIFICATION WRAPPER
+--========================================================--
+
+local function notify(title, content)
+    -- Feature notification implementation goes here.
+end
+
+--========================================================--
+-- SAFE CALLBACK WRAPPER
+--========================================================--
+
+local function SafeCallback(name, callback)
+    if type(callback) ~= "function" then
+        return function()
+            warn("[Heavely Hub] Missing callback: " .. tostring(name))
+        end
+    end
+
+    return function(...)
+        local args = table.pack(...)
+
+        local success, err = xpcall(function()
+            callback(table.unpack(args, 1, args.n))
+        end, debug.traceback)
+
+        if not success then
+            warn(
+                "[Heavely Hub] "
+                .. tostring(name)
+                .. " Callback Error:\n"
+                .. tostring(err)
+            )
+        end
+    end
+end
+
+--========================================================--
+-- TAB WRAPPER
+--========================================================--
+
+local function WrapTab(tab)
+    local Wrapped = {}
+
+    function Wrapped:CreateSection(name)
+        return tab:CreateSection(name)
+    end
+
+    function Wrapped:CreateDivider()
+        return tab:CreateDivider()
+    end
+
+    function Wrapped:CreateLabel(settings)
+        return tab:CreateLabel(settings)
+    end
+
+    local function wrap(method)
+        return function(self, settings)
+            settings = settings or {}
+
+            local copy = {}
+
+            for key, value in pairs(settings) do
+                copy[key] = value
+            end
+
+            copy.Callback = SafeCallback(
+                copy.Name or method,
+                copy.Callback
+            )
+
+            return tab[method](tab, copy)
+        end
+    end
+
+    Wrapped.CreateButton = wrap("CreateButton")
+    Wrapped.CreateToggle = wrap("CreateToggle")
+    Wrapped.CreateDropdown = wrap("CreateDropdown")
+    Wrapped.CreateSlider = wrap("CreateSlider")
+    Wrapped.CreateInput = wrap("CreateInput")
+    Wrapped.CreateColorPicker = wrap("CreateColorPicker")
+    Wrapped.CreateKeybind = wrap("CreateKeybind")
+
+    return Wrapped
+end
 
 --========================================================--
 -- WINDOW
@@ -28,340 +113,297 @@ local Luna = loadstring(game:HttpGet(
 
 local Window = Luna:CreateWindow({
     Name = "Heavely Hub",
-    Subtitle = "Total Roblox Drama • Camp",
-    LogoID = "117588015510601",
-
-    LoadingEnabled = true,
-    LoadingTitle = "Heavely Hub (Camp)",
-    LoadingSubtitle = "Loading Assets..",
-
-    ConfigSettings = {
-        RootFolder = "HeavelyHub",
-        ConfigFolder = "Camp"
-    },
-
-    KeySystem = false
-})
-
---========================================================--
--- DASHBOARD
---========================================================--
--- Dashboard uses Luna's built-in Home component.
--- Icon 2 = Dashboard.
---========================================================--
-
-Window:CreateHomeTab({
-    Icon = 2,
-    SupportedExecutors = {},
-    DiscordInvite = ""
-})
-
---========================================================--
--- TABS
---========================================================--
-
-local Main = Window:CreateTab({
-    Name = "Main",
-    Icon = "sports_esports",
-    ImageSource = "Material",
-    ShowTitle = true
-})
-
-local Challenges = Window:CreateTab({
-    Name = "Challenges",
-    Icon = "emoji_events",
-    ImageSource = "Material",
-    ShowTitle = true
-})
-
-local Characters = Window:CreateTab({
-    Name = "Characters",
-    Icon = "people",
-    ImageSource = "Material",
-    ShowTitle = true
-})
-
-local Universal = Window:CreateTab({
-    Name = "Universal",
-    Icon = "public",
-    ImageSource = "Material",
-    ShowTitle = true
-})
-
-local Tools = Window:CreateTab({
-    Name = "Tools",
-    Icon = "build",
-    ImageSource = "Material",
-    ShowTitle = true
-})
-
-local Visuals = Window:CreateTab({
-    Name = "Visuals",
-    Icon = "visibility",
-    ImageSource = "Material",
-    ShowTitle = true
-})
-
-local Settings = Window:CreateTab({
-    Name = "Settings",
-    Icon = "settings",
-    ImageSource = "Material",
-    ShowTitle = true
+    Subtitle = "Total Roblox Drama",
 })
 
 --========================================================--
 -- MAIN
 --========================================================--
 
-Main:CreateSection("Votes")
+local MainTab = WrapTab(Window:CreateTab({
+    Name = "Main",
+    Icon = "layout-dashboard",
+}))
 
-Main:CreateToggle({
+MainTab:CreateSection("Votes")
+
+MainTab:CreateButton({
     Name = "Notify Votes",
-    CurrentValue = false,
+    Callback = function()
+        function(Value)
+    if Value then
+        local season = game.ReplicatedStorage:FindFirstChild("Season")
+        local voting = season and season:FindFirstChild("Voting")
+        local votes = voting and voting:FindFirstChild("Votes")
 
-    Callback = function(Value)
-        disconnect(voteConn)
-        voteConn = nil
-
-        if not Value then
+        if not votes then
             return
         end
 
-        local votes = RS.Season.Voting:FindFirstChild("Votes")
+        if NotifyVotesConnection then
+            NotifyVotesConnection:Disconnect()
+        end
 
-        if votes then
-            voteConn = votes.ChildAdded:Connect(function(vote)
-                local voter, target = getVoteText(vote)
+        NotifyVotesConnection = votes.ChildAdded:Connect(function(vote)
+            local players = season:FindFirstChild("Players")
 
-                notify(
-                    "Vote",
-                    voter .. " voted for " .. target
-                )
-            end)
+            local voter = players and players:FindFirstChild(tostring(vote.Value))
+            local target = players and players:FindFirstChild(tostring(vote.Name))
+
+            local voterName = voter and tostring(voter.Value) or tostring(vote.Value)
+            local targetName = target and tostring(target.Value) or tostring(vote.Name)
+
+            notify(
+                "Vote Update",
+                voterName .. " voted for " .. targetName
+            )
+        end)
+    else
+        if NotifyVotesConnection then
+            NotifyVotesConnection:Disconnect()
+            NotifyVotesConnection = nil
         end
     end
-})
+end
 
-Main:CreateToggle({
+MainTab:CreateButton({
     Name = "Expose Votes",
-    CurrentValue = false,
-
-    Callback = function(Value)
+    Callback = function()
         if Value then
-            local RS = game:GetService("ReplicatedStorage")
-            local season = RS:FindFirstChild("Season")
-            local voting = season and season:FindFirstChild("Voting")
-            local votes = voting and voting:FindFirstChild("Votes")
+        local RS = game:GetService("ReplicatedStorage")
+        local season = RS:FindFirstChild("Season")
+        local voting = season and season:FindFirstChild("Voting")
+        local votes = voting and voting:FindFirstChild("Votes")
 
-            if votes then
-                exposeVotesConn = votes.ChildAdded:Connect(function(v)
-                    local r_val = season.Players:FindFirstChild(v.Value)
-                    local d_val = season.Players:FindFirstChild(v.Name)
+        if votes then
+            exposeVotesConn = votes.ChildAdded:Connect(function(v)
+                local players = season:FindFirstChild("Players")
 
-                    local r = r_val and r_val.Value or v.Value
-                    local d = d_val and d_val.Value or v.Name
+                local r_val = players and players:FindFirstChild(tostring(v.Value))
+                local d_val = players and players:FindFirstChild(tostring(v.Name))
 
-                    local TextChatService = game:GetService("TextChatService")
-                    local channel = TextChatService.TextChannels:FindFirstChild("RBXGeneral")
+                local r = r_val and r_val.Value or v.Value
+                local d = d_val and d_val.Value or v.Name
+
+                pcall(function()
+                    local channels = game:GetService("TextChatService"):FindFirstChild("TextChannels")
+                    local channel = channels and channels:FindFirstChild("RBXGeneral")
 
                     if channel then
                         channel:SendAsync(
-                            r .. " voted for " .. d
+                            tostring(r) .. " voted for " .. tostring(d)
                         )
                     end
                 end)
-            end
-        else
-            if exposeVotesConn then
-                exposeVotesConn:Disconnect()
-                exposeVotesConn = nil
-            end
+            end)
+        end
+    else
+        if exposeVotesConn then
+            exposeVotesConn:Disconnect()
+            exposeVotesConn = nil
         end
     end
-})
+end
 
-Main:CreateToggle({
-    Name = "See Jury Votes (Wait for Finale)",
-    CurrentValue = false,
-
-    Callback = function(Value)
-        if _G.HeavelyJuryConns then
-            for _, connection in ipairs(_G.HeavelyJuryConns) do
-                disconnect(connection)
-            end
-        end
-
-        _G.HeavelyJuryConns = {}
-
-        if not Value then
-            return
-        end
-
-        local jury = RS.Season:FindFirstChild("Jury")
-
-        if not jury then
-            return
-        end
-
-        for _, juryMember in ipairs(jury:GetChildren()) do
-            local list = juryMember:FindFirstChild("List")
-
-            if list then
-                table.insert(
-                    _G.HeavelyJuryConns,
-                    list.ChildAdded:Connect(function(vote)
-                        notify(
-                            "Jury Vote",
-                            tostring(juryMember.Value)
-                                .. " voted for "
-                                .. tostring(vote.Value)
-                        )
-                    end)
-                )
-            end
-        end
-    end
-})
-
-Main:CreateToggle({
-    Name = "Notify Exile Votes",
-    CurrentValue = false,
-
-    Callback = function(Value)
-        disconnect(exileVotesConn)
-        exileVotesConn = nil
-
-        if not Value then
-            return
-        end
-
-        local twists = RS:FindFirstChild("Season")
-            and RS.Season:FindFirstChild("Twists")
-
-        local exileVoting = twists
-            and twists:FindFirstChild("ExileVoting")
-
-        local votes = exileVoting
-            and exileVoting:FindFirstChild("Votes")
-
-        if votes then
-            exileVotesConn = votes.ChildAdded:Connect(function(vote)
-                local season = RS.Season
-
-                local voterValue =
-                    season.Players:FindFirstChild(vote.Value)
-
-                local targetValue =
-                    season.Players:FindFirstChild(vote.Name)
-
-                local voter =
-                    voterValue and voterValue.Value
-                    or vote.Value
-
-                local target =
-                    targetValue and targetValue.Value
-                    or vote.Name
-
-                notify(
-                    "Exile Vote",
-                    voter .. " voted to exile " .. target
-                )
+MainTab:CreateButton({
+    Name = "See Jury Votes",
+    Callback = function()
+        function(v)
+    if _G.HeavelyJuryConns then
+        for _, c in ipairs(_G.HeavelyJuryConns) do
+            pcall(function()
+                c:Disconnect()
             end)
         end
     end
-})
 
-Main:CreateToggle({
-    Name = "Print Votes in Console",
-    CurrentValue = false,
+    _G.HeavelyJuryConns = {}
 
-    Callback = function(Value)
-        disconnect(printVotesConn)
-        printVotesConn = nil
-
-        if not Value then
-            return
-        end
-
-        local votes = RS.Season.Voting:FindFirstChild("Votes")
-
-        if votes then
-            printVotesConn = votes.ChildAdded:Connect(function(vote)
-                local voter, target = getVoteText(vote)
-
-                print(
-                    "[Heavely Hub] "
-                    .. voter
-                    .. " voted for "
-                    .. target
-                )
-            end)
-        end
+    if not v then
+        return
     end
-})
 
-Main:CreateSection("Statue")
+    local season = RS:FindFirstChild("Season")
+    local jury = season and season:FindFirstChild("Jury")
 
-Main:CreateButton({
-    Name = "Find Statue (60% Spawn)",
-    Callback = function()
-        for _, v in pairs(workspace.Idols:GetDescendants()) do
-            if v.Name == "Bag" or v.Name == "SafetyStatue" then
-                if v:FindFirstChild("hit") and root() then
-                    v.hit.CanCollide = false
-                    v.hit.Transparency = 1
-
-                    task.wait()
-
-                    v.hit.Position = root().Position
-
-                    task.wait()
-                end
-            end
-        end
+    if not jury then
+        return
     end
-})
 
-Main:CreateButton({
-    Name = "Get Statue Immediately",
-    Callback = function()
-        task.spawn(function()
-            for _ = 1, 50 do
-                grabStatue()
-                task.wait(0.05)
-            end
-        end)
-    end
-})
+    for _, j in ipairs(jury:GetChildren()) do
+        local list = j:FindFirstChild("List")
 
-Main:CreateButton({
-    Name = "Detect who has Statue",
-    Callback = function()
-        local s = season()
-        local idol = s
-            and s:FindFirstChild("Twists")
-            and s.Twists:FindFirstChild("Idol")
-
-        if not idol or idol.Value == "" then
-            notify(
-                "Statue Owner",
-                "Nobody has the statue yet."
+        if list then
+            table.insert(
+                _G.HeavelyJuryConns,
+                list.ChildAdded:Connect(function(x)
+                    notify(
+                        "Jury Vote",
+                        tostring(j.Value)
+                            .. " voted for "
+                            .. tostring(x.Value)
+                    )
+                end)
             )
-            return
         end
+    end
+end
+
+MainTab:CreateButton({
+    Name = "Notify Exile Votes",
+    Callback = function()
+        function(v)
+    disconnect(exileVotesConn)
+    exileVotesConn = nil
+
+    if not v then
+        return
+    end
+
+    local season = RS:FindFirstChild("Season")
+    local twists = season and season:FindFirstChild("Twists")
+    local exileVoting = twists and twists:FindFirstChild("ExileVoting")
+    local votes = exileVoting and exileVoting:FindFirstChild("Votes")
+
+    if not votes then
+        return
+    end
+
+    exileVotesConn = votes.ChildAdded:Connect(function(vote)
+        local players = season and season:FindFirstChild("Players")
+
+        local voterValue = players and players:FindFirstChild(tostring(vote.Value))
+        local targetValue = players and players:FindFirstChild(tostring(vote.Name))
+
+        local voter = voterValue and voterValue.Value or vote.Value
+        local target = targetValue and targetValue.Value or vote.Name
 
         notify(
-            "Statue Owner",
-            tostring(idol.Value)
+            "Exile Vote",
+            tostring(voter) .. " voted to exile " .. tostring(target)
         )
+    end)
+end
+
+MainTab:CreateButton({
+    Name = "Print Votes in Console",
+    Callback = function()
+        function(v)
+    disconnect(printVotesConn)
+    printVotesConn = nil
+
+    if not v then
+        return
     end
-})
 
-Main:CreateToggle({
+    local season = RS:FindFirstChild("Season")
+    local voting = season and season:FindFirstChild("Voting")
+    local votes = voting and voting:FindFirstChild("Votes")
+
+    if not votes then
+        return
+    end
+
+    printVotesConn = votes.ChildAdded:Connect(function(x)
+        local players = season:FindFirstChild("Players")
+
+        local voterValue = players and players:FindFirstChild(tostring(x.Value))
+        local targetValue = players and players:FindFirstChild(tostring(x.Name))
+
+        local voter = voterValue and voterValue.Value or x.Value
+        local target = targetValue and targetValue.Value or x.Name
+
+        print(tostring(voter) .. " voted for " .. tostring(target))
+    end)
+end
+
+MainTab:CreateSection("Statue")
+
+MainTab:CreateButton({
+    Name = "Find Statue (60% Spawn Rate)",
+    Callback = function()
+        function()
+    for _, v in pairs(workspace.Idols:GetDescendants()) do
+        if v.Name == "Bag" or v.Name == "SafetyStatue" then
+            if v:FindFirstChild("hit") and root() then
+                v.hit.CanCollide = false
+                v.hit.Transparency = 1
+                task.wait()
+                v.hit.Position = root().Position
+                task.wait()
+            end
+        end
+    end
+end
+
+MainTab:CreateButton({
+    Name = "Auto Get Statue",
+    Callback = function()
+        function()
+    local function tryGrab(v)
+        if v:IsA("BasePart") and v.Name == "hit" then
+            local parent = v.Parent
+
+            if parent and (parent.Name == "Bag" or parent.Name == "SafetyStatue") then
+                task.wait(0.1)
+
+                v.CanCollide = false
+                v.Transparency = 1
+
+                task.spawn(function()
+                    while v and v.Parent do
+                        if player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+                            v.CFrame = player.Character.HumanoidRootPart.CFrame
+                        end
+
+                        task.wait(0.05)
+                    end
+                end)
+            end
+        end
+    end
+
+    if not _G.StatueGrabConn then
+        _G.StatueGrabConn = workspace.DescendantAdded:Connect(function(v)
+            tryGrab(v)
+        end)
+    end
+
+    for _, v in pairs(workspace:GetDescendants()) do
+        tryGrab(v)
+    end
+end
+
+MainTab:CreateButton({
+    Name = "Detect Who Has Statue",
+    Callback = function()
+        function()
+    pcall(function()
+        local idol = game.ReplicatedStorage.Season.Twists.Idol
+
+        if idol.Value == "" then
+            notify(
+                "Statue Owner",
+                "No one currently has the statue, or it did not spawn."
+            )
+        else
+            local playerData = game.ReplicatedStorage.Season.Players:FindFirstChild(idol.Value)
+
+            if playerData then
+                notify(
+                    "Statue Owner",
+                    tostring(playerData.Value) .. " has the statue"
+                )
+            end
+        end
+    end)
+end
+
+MainTab:CreateToggle({
     Name = "Bag ESP",
-    CurrentValue = false,
-
-    Callback = function(Value)
+    Callback = function()
+        function(Value)
+    if Value then
         local idols = workspace:FindFirstChild("Idols")
         if not idols then
             return
@@ -369,726 +411,645 @@ Main:CreateToggle({
 
         for _, bag in ipairs(idols:GetDescendants()) do
             if bag.Name == "Bag" and bag:IsA("Model") then
-                local old = bag:FindFirstChild("HeavelyBagESP")
+                local part = bag.PrimaryPart or bag:FindFirstChildWhichIsA("BasePart")
 
-                if Value and not old then
-                    local p = bag.PrimaryPart
-                        or bag:FindFirstChildWhichIsA("BasePart")
-
-                    if p then
-                        local h = Instance.new("Highlight")
-                        h.Name = "HeavelyBagESP"
-                        h.FillTransparency = 1
-                        h.OutlineColor = Color3.new(1, 1, 1)
-                        h.Parent = bag
-
-                        local bb = Instance.new("BillboardGui")
-                        bb.Name = "HeavelyBagLabel"
-                        bb.Size = UDim2.new(0, 180, 0, 40)
-                        bb.StudsOffset = Vector3.new(0, 3, 0)
-                        bb.AlwaysOnTop = true
-                        bb.Adornee = p
-                        bb.Parent = bag
-
-                        local t = Instance.new("TextLabel")
-                        t.Size = UDim2.fromScale(1, 1)
-                        t.BackgroundTransparency = 1
-                        t.Text = "BAG"
-                        t.TextColor3 = Color3.new(1, 1, 1)
-                        t.TextStrokeTransparency = 0
-                        t.TextScaled = true
-                        t.Font = Enum.Font.GothamBold
-                        t.Parent = bb
+                if part then
+                    if not bag:FindFirstChild("BagHighlight") then
+                        local highlight = Instance.new("Highlight")
+                        highlight.Name = "BagHighlight"
+                        highlight.FillTransparency = 1
+                        highlight.OutlineColor = Color3.fromRGB(255, 255, 255)
+                        highlight.Parent = bag
                     end
 
-                elseif not Value then
-                    if old then
-                        old:Destroy()
-                    end
+                    if not bag:FindFirstChild("BagESP") then
+                        local billboard = Instance.new("BillboardGui")
+                        billboard.Name = "BagESP"
+                        billboard.Size = UDim2.new(0, 220, 0, 60)
+                        billboard.StudsOffset = Vector3.new(0, 3, 0)
+                        billboard.AlwaysOnTop = true
+                        billboard.Adornee = part
+                        billboard.Parent = bag
 
-                    local label = bag:FindFirstChild("HeavelyBagLabel")
-                    if label then
-                        label:Destroy()
+                        local text = Instance.new("TextLabel")
+                        text.Size = UDim2.new(1, 0, 1, 0)
+                        text.BackgroundTransparency = 1
+                        text.Text = "BAG"
+                        text.TextColor3 = Color3.fromRGB(255, 255, 255)
+                        text.TextStrokeTransparency = 0
+                        text.TextScaled = true
+                        text.Font = Enum.Font.GothamBold
+                        text.Parent = billboard
                     end
                 end
             end
         end
-    end
-})
+    else
+        for _, bag in ipairs(workspace:GetDescendants()) do
+            if bag.Name == "Bag" then
+                local highlight = bag:FindFirstChild("BagHighlight")
+                local esp = bag:FindFirstChild("BagESP")
 
-Main:CreateToggle({
+                if highlight then
+                    highlight:Destroy()
+                end
+
+                if esp then
+                    esp:Destroy()
+                end
+            end
+        end
+    end
+end
+
+MainTab:CreateToggle({
     Name = "Safety Statue ESP",
-    CurrentValue = false,
-
-    Callback = function(Value)
-        local idols = workspace:FindFirstChild("Idols")
-        if not idols then
-            return
-        end
-
-        for _, statue in ipairs(idols:GetDescendants()) do
-            if statue.Name == "SafetyStatue"
-                and statue:IsA("Model") then
-
-                local old = statue:FindFirstChild("HeavelyStatueESP")
-
-                if Value and not old then
-                    local highlight = Instance.new("Highlight")
-                    highlight.Name = "SAFETY STATUE"
-                    highlight.FillTransparency = 1
-                    highlight.OutlineColor = Color3.new(1, 1, 1)
-                    highlight.Parent = statue
-
-                elseif not Value and old then
-                    old:Destroy()
-                end
-            end
-        end
-    end
-})
-
-Main:CreateSection("Extras")
-
-Main:CreateButton({
-    Name = "Fling / Restart Day",
     Callback = function()
-        loadstring(game:HttpGet(
-            "https://raw.githubusercontent.com/robloxcheatck/reanimatescript/main/script.lua",
-            true
-        ))()
-    end
-})
+        function(Value)
+    if Value then
+        for _, statue in ipairs(workspace.Idols:GetDescendants()) do
+            if statue.Name == "SafetyStatue" and statue:IsA("Model") then
+                local part = statue.PrimaryPart
+                    or statue:FindFirstChildWhichIsA("BasePart")
 
-local autoRoundConn
+                if part then
+                    if not statue:FindFirstChild("StatueHighlight") then
+                        local highlight = Instance.new("Highlight")
+                        highlight.Name = "StatueHighlight"
+                        highlight.FillTransparency = 1
+                        highlight.OutlineColor = Color3.fromRGB(255, 255, 255)
+                        highlight.Parent = statue
+                    end
 
-Main:CreateToggle({
-    Name = "Auto Detect Round",
-    CurrentValue = false,
+                    if not statue:FindFirstChild("StatueESP") then
+                        local billboard = Instance.new("BillboardGui")
+                        billboard.Name = "StatueESP"
+                        billboard.Size = UDim2.new(0, 260, 0, 70)
+                        billboard.StudsOffset = Vector3.new(0, 4, 0)
+                        billboard.AlwaysOnTop = true
+                        billboard.Adornee = part
+                        billboard.Parent = statue
 
-    Callback = function(Value)
-        if autoRoundConn then
-            autoRoundConn:Disconnect()
-            autoRoundConn = nil
+                        local text = Instance.new("TextLabel")
+                        text.Size = UDim2.new(1, 0, 1, 0)
+                        text.BackgroundTransparency = 1
+                        text.Text = "SAFETY STATUE"
+                        text.TextColor3 = Color3.fromRGB(255, 255, 255)
+                        text.TextStrokeTransparency = 0
+                        text.TextScaled = true
+                        text.Font = Enum.Font.GothamBold
+                        text.Parent = billboard
+                    end
+                end
+            end
         end
+    else
+        for _, statue in ipairs(workspace:GetDescendants()) do
+            if statue.Name == "SafetyStatue" then
+                local highlight = statue:FindFirstChild("StatueHighlight")
+                local esp = statue:FindFirstChild("StatueESP")
 
-        if not Value then
+                if highlight then
+                    highlight:Destroy()
+                end
+
+                if esp then
+                    esp:Destroy()
+                end
+            end
+        end
+    end
+end
+
+MainTab:CreateSection("Round")
+
+MainTab:CreateButton({
+    Name = "Fling/Restart Day",
+    Callback = function()
+        function()
+    loadstring(game:HttpGet(
+        "https://raw.githubusercontent.com/robloxcheatck/reanimatescript/main/script.lua",
+        true
+    ))()
+end
+
+MainTab:CreateToggle({
+    Name = "Auto Detect Round",
+    Callback = function()
+        function(Value)
+    if Value then
+        local t = game.ReplicatedStorage.Season.Twists:FindFirstChild("CurrentTwist")
+
+        if not t then
             return
         end
 
-        pcall(function()
-            local t = RS.Season.Twists:FindFirstChild("CurrentTwist")
+        if autoDetectRoundConn then
+            autoDetectRoundConn:Disconnect()
+            autoDetectRoundConn = nil
+        end
 
-            if not t then
-                return
+        autoDetectRoundConn = t:GetPropertyChangedSignal("Value"):Connect(function()
+            local roundNames = {
+                normal = "Normal Round - nothing special yet.",
+                purge = "Special Round! - This will be a purge round.",
+                ["double"] = "Special Round! - Two people will be eliminated.",
+                singleswap = "Special Round! - SIKE! Eliminated player gets swapped to another team.",
+                exile = "Special Round! - There will be an exile vote.",
+                votereveal = "Special Round! - Kyle will expose the votes this round.",
+            }
+
+            local content = roundNames[t.Value]
+
+            if content then
+                notify("Round Detected", content)
             end
-
-            autoRoundConn = t:GetPropertyChangedSignal("Value"):Connect(function()
-                local roundNames = {
-                    Undecided = "Round not decided yet - the twist hasn't been set.",
-                    normal = "Normal Round - nothing special yet.",
-                    purge = "Special Round! - This will be a purge round.",
-                    double = "Special Round! - Two people will be eliminated.",
-                    singleswap = "Special Round - SIKE! Eliminated player gets swapped to another team.",
-                    exile = "Special Round! - There will be an exile vote.",
-                    votereveal = "Special Round! - Kyle will expose the votes this round, vote random!"
-                }
-
-                local content = roundNames[t.Value]
-
-                if content then
-                    notify("Round Detected", content)
-                end
-            end)
         end)
+    else
+        if autoDetectRoundConn then
+            autoDetectRoundConn:Disconnect()
+            autoDetectRoundConn = nil
+        end
     end
-})
+end
 
-Main:CreateButton({
+MainTab:CreateButton({
     Name = "Detect Teamers",
     Callback = function()
-        local PlayersService = game:GetService("Players")
-        local ReplicatedStorage = game:GetService("ReplicatedStorage")
+        function()
+    local Players = game:GetService("Players")
+    local RS = game:GetService("ReplicatedStorage")
 
-        local season = ReplicatedStorage:FindFirstChild("Season")
-        if not season then
-            return
+    local season = RS:FindFirstChild("Season")
+    if not season then
+        return
+    end
+
+    local playersFolder = season:FindFirstChild("Players")
+    if not playersFolder then
+        return
+    end
+
+    local function getInGameName(player)
+        local data = playersFolder:FindFirstChild(player.Name)
+
+        if data and data.Value ~= "" then
+            return tostring(data.Value)
         end
 
-        local playersFolder = season:FindFirstChild("Players")
-        if not playersFolder then
-            return
+        return player.DisplayName
+    end
+
+    local function getRoot(player)
+        local character = player.Character
+        return character and character:FindFirstChild("HumanoidRootPart")
+    end
+
+    local teams = {}
+
+    for _, player in ipairs(Players:GetPlayers()) do
+        local team = player.Team
+
+        if team then
+            teams[team] = teams[team] or {}
+            table.insert(teams[team], player)
         end
+    end
 
-        local function getInGameName(player)
-            local data = playersFolder:FindFirstChild(player.Name)
+    local suspects = {}
 
-            if data and data.Value ~= "" then
-                return tostring(data.Value)
-            end
+    for team, members in pairs(teams) do
+        if #members >= 2 then
+            for i = 1, #members - 1 do
+                for j = i + 1, #members do
+                    local a = getRoot(members[i])
+                    local b = getRoot(members[j])
 
-            return player.Name
-        end
+                    if a and b then
+                        local distance = (a.Position - b.Position).Magnitude
 
-        local found = false
-        local playerList = PlayersService:GetPlayers()
-
-        for i = 1, #playerList do
-            local p1 = playerList[i]
-
-            for j = i + 1, #playerList do
-                local p2 = playerList[j]
-
-                local success, areFriends = pcall(function()
-                    return p1:IsFriendsWith(p2.UserId)
-                end)
-
-                if success and areFriends then
-                    found = true
-
-                    local name1 = getInGameName(p1)
-                    local name2 = getInGameName(p2)
-
-                    notify(
-                        "Teamer Detected!",
-                        name1 .. " is teaming with " .. name2
-                    )
-
-                    task.wait(0.6)
+                        if distance <= 12 then
+                            table.insert(
+                                suspects,
+                                getInGameName(members[i])
+                                    .. " is teaming with "
+                                    .. getInGameName(members[j])
+                            )
+                        end
+                    end
                 end
             end
         end
-
-        if not found then
-            notify(
-                "No Teamers Found",
-                "No friend pairs detected in this lobby."
-            )
-        end
     end
-})
+
+    if #suspects == 0 then
+        notify("Teamers", "No possible teamers detected.")
+    else
+        notify("Possible Teamers", table.concat(suspects, "\n"))
+    end
+end
 
 --========================================================--
 -- CHALLENGES
 --========================================================--
 
-Challenges:CreateSection("Challenges")
+local ChallengesTab = WrapTab(Window:CreateTab({
+    Name = "Challenges",
+    Icon = "trophy",
+}))
 
-Challenges:CreateButton({
-    Name = "Win Obby",
-    Callback = function()
-    end
-})
+ChallengesTab:CreateSection("Challenges")
 
-Challenges:CreateToggle({
-    Name = "Auto Win Obby",
-    CurrentValue = false,
-    Callback = function(Value)
-    end
-})
-
-Challenges:CreateToggle({
-    Name = "No Spinner/Sweeper Parts",
-    CurrentValue = false,
-    Callback = function(Value)
-    end
-})
-
-Challenges:CreateToggle({
-    Name = "Cliff Diving ESP",
-    CurrentValue = false,
-    Callback = function(Value)
-    end
-})
-
-Challenges:CreateButton({
-    Name = "Finish Pancake",
-    Callback = function()
-    end
-})
-
-Challenges:CreateButton({
-    Name = "Remove all Spleef Fragments",
-    Callback = function()
-    end
-})
-
-Challenges:CreateButton({
-    Name = "Win Block push",
-    Callback = function()
-    end
-})
-
-Challenges:CreateToggle({
-    Name = "Auto Take Dodgeballs",
-    CurrentValue = false,
-    Callback = function(Value)
-    end
-})
-
-Challenges:CreateToggle({
-    Name = "Dodgeball Invincibility",
-    CurrentValue = false,
-    Callback = function(Value)
-    end
-})
-
-Challenges:CreateToggle({
-    Name = "Paintball Invincibility",
-    CurrentValue = false,
-    Callback = function(Value)
-    end
-})
-
-Challenges:CreateButton({
-    Name = "Auto Get all Coins & Gems",
-    Callback = function()
-    end
-})
-
-Challenges:CreateButton({
-    Name = "Answer Math Mania",
-    Callback = function()
-    end
-})
-
-Challenges:CreateSlider({
-    Name = "Math Mania Setback",
-    Range = {0, 10},
-    Increment = 0.1,
-    Suffix = "s",
-    CurrentValue = 0,
-
-    Callback = function(Value)
-    end
-})
-
-Challenges:CreateButton({
-    Name = "Kill Everyone in Swordfight",
-    Callback = function()
-    end
-})
+-- Challenge controls go here.
+-- No feature implementations.
 
 --========================================================--
 -- CHARACTERS
 --========================================================--
 
-Characters:CreateSection("Comeback")
+local CharactersTab = WrapTab(Window:CreateTab({
+    Name = "Characters",
+    Icon = "user-round",
+}))
 
-Characters:CreateButton({
+CharactersTab:CreateSection("Comeback")
+
+CharactersTab:CreateButton({
     Name = "Comeback as Male",
     Callback = function()
-    end
+        -- Function goes here.
+    end,
 })
 
-Characters:CreateButton({
+CharactersTab:CreateButton({
     Name = "Comeback as Female",
     Callback = function()
-    end
+        -- Function goes here.
+    end,
 })
 
-Characters:CreateSection("Paid")
+CharactersTab:CreateSection("Paid")
 
-Characters:CreateInput({
+CharactersTab:CreateInput({
     Name = "Name Character",
-    CurrentValue = "",
-    PlaceholderText = "Character Name Here...",
-    ClearTextAfterFocusLost = false,
-
-    Callback = function(Value)
-    end
+    PlaceholderText = "Character Name",
+    Callback = function()
+        -- Function goes here.
+    end,
 })
 
-Characters:CreateButton({
+CharactersTab:CreateButton({
     Name = "Buy Character (@60)",
     Callback = function()
-    end
+        -- Function goes here.
+    end,
 })
 
-Characters:CreateDropdown({
+CharactersTab:CreateDropdown({
     Name = "Select Character Symbol",
-
-    Options = {
-        "None",
-        "Verified",
-        "Premium",
-        "Robux"
-    },
-
-    CurrentOption = {
-        "None"
-    },
-
-    MultipleOptions = false,
-
-    Callback = function(Value)
-    end
+    Options = {},
+    CurrentOption = {},
+    Callback = function()
+        -- Function goes here.
+    end,
 })
 
-Characters:CreateButton({
+CharactersTab:CreateButton({
     Name = "Buy Symbol Character (@60)",
     Callback = function()
-    end
+        -- Function goes here.
+    end,
 })
 
 --========================================================--
 -- UNIVERSAL
 --========================================================--
 
-Universal:CreateSection("Player")
+local UniversalTab = WrapTab(Window:CreateTab({
+    Name = "Universal",
+    Icon = "globe",
+}))
 
-Universal:CreateToggle({
+UniversalTab:CreateSection("Player")
+
+UniversalTab:CreateToggle({
     Name = "Infinite Jump",
-    CurrentValue = false,
-
-    Callback = function(Value)
-    end
+    Callback = function()
+        -- Function goes here.
+    end,
 })
 
-Universal:CreateToggle({
+UniversalTab:CreateToggle({
     Name = "Noclip",
-    CurrentValue = false,
-
-    Callback = function(Value)
-    end
+    Callback = function()
+        -- Function goes here.
+    end,
 })
 
-Universal:CreateToggle({
+UniversalTab:CreateToggle({
     Name = "Fly",
-    CurrentValue = false,
-
-    Callback = function(Value)
-    end
+    Callback = function()
+        -- Function goes here.
+    end,
 })
 
-Universal:CreateSlider({
-    Name = "Fly Setback (Fly Speed)",
-    Range = {1, 250},
+UniversalTab:CreateSlider({
+    Name = "Fly Setback",
+    Range = {1, 500},
     Increment = 1,
-    Suffix = "Speed",
     CurrentValue = 50,
-
-    Callback = function(Value)
-    end
+    Callback = function()
+        -- Function goes here.
+    end,
 })
 
-Universal:CreateSlider({
+UniversalTab:CreateSlider({
     Name = "Speed Power",
-    Range = {1, 350},
+    Range = {1, 500},
     Increment = 1,
-    Suffix = "Speed",
     CurrentValue = 16,
-
-    Callback = function(Value)
-    end
+    Callback = function()
+        -- Function goes here.
+    end,
 })
 
-Universal:CreateSlider({
-    Name = "Jumppower",
-    Range = {1, 350},
+UniversalTab:CreateSlider({
+    Name = "JumpPower",
+    Range = {1, 500},
     Increment = 1,
-    Suffix = "Power",
     CurrentValue = 50,
-
-    Callback = function(Value)
-    end
+    Callback = function()
+        -- Function goes here.
+    end,
 })
 
-Universal:CreateSection("Randoms")
+UniversalTab:CreateSection("Randoms")
 
-Universal:CreateButton({
+UniversalTab:CreateToggle({
     Name = "Shaders",
     Callback = function()
-    end
+        -- Function goes here.
+    end,
 })
 
-Universal:CreateButton({
+UniversalTab:CreateButton({
     Name = "Infinite Yield",
     Callback = function()
-    end
+        -- Function goes here.
+    end,
 })
 
-Universal:CreateButton({
+UniversalTab:CreateButton({
     Name = "Energize R6",
     Callback = function()
-    end
+        -- Function goes here.
+    end,
 })
 
 --========================================================--
 -- TOOLS
 --========================================================--
 
-Tools:CreateSection("Utility")
+local ToolsTab = WrapTab(Window:CreateTab({
+    Name = "Tools",
+    Icon = "wrench",
+}))
 
-Tools:CreateButton({
+ToolsTab:CreateSection("Utility")
+
+ToolsTab:CreateButton({
     Name = "FE Genesis Sniper",
     Callback = function()
-    end
+        -- Function goes here.
+    end,
 })
 
-Tools:CreateSection("Teleports")
+ToolsTab:CreateSection("Teleports")
 
-Tools:CreateButton({
+ToolsTab:CreateButton({
     Name = "Teleport to Main Island",
     Callback = function()
-    end
+        -- Function goes here.
+    end,
 })
 
-Tools:CreateButton({
+ToolsTab:CreateButton({
     Name = "Teleport to Voting Area",
     Callback = function()
-    end
+        -- Function goes here.
+    end,
 })
 
-Tools:CreateButton({
+ToolsTab:CreateButton({
     Name = "Teleport to Spectator Island",
     Callback = function()
-    end
+        -- Function goes here.
+    end,
 })
 
-Tools:CreateButton({
+ToolsTab:CreateButton({
     Name = "Teleport to Bathroom",
     Callback = function()
-    end
+        -- Function goes here.
+    end,
 })
 
 --========================================================--
 -- VISUALS
 --========================================================--
 
-Visuals:CreateSection("Typefaces")
+local VisualsTab = WrapTab(Window:CreateTab({
+    Name = "Visuals",
+    Icon = "eye",
+}))
 
-Visuals:CreateButton({
+VisualsTab:CreateSection("Typefaces")
+
+VisualsTab:CreateButton({
     Name = "Starborn Typeface",
     Callback = function()
-    end
+        -- Function goes here.
+    end,
 })
 
-Visuals:CreateButton({
+VisualsTab:CreateButton({
     Name = "Minecraft Typeface",
     Callback = function()
-    end
+        -- Function goes here.
+    end,
 })
 
-Visuals:CreateButton({
+VisualsTab:CreateButton({
     Name = "Typeface 3",
     Callback = function()
-    end
+        -- Function goes here.
+    end,
 })
 
-Visuals:CreateButton({
+VisualsTab:CreateButton({
     Name = "Typeface 4",
     Callback = function()
-    end
+        -- Function goes here.
+    end,
 })
 
-Visuals:CreateButton({
+VisualsTab:CreateButton({
     Name = "Reset Typeface",
     Callback = function()
-    end
+        -- Function goes here.
+    end,
 })
 
-Visuals:CreateSection("Clients")
+VisualsTab:CreateSection("Clients")
 
-Visuals:CreateInput({
+VisualsTab:CreateInput({
     Name = "Custom Name",
-    CurrentValue = "",
-    PlaceholderText = "Enter custom name...",
-    ClearTextAfterFocusLost = false,
-
-    Callback = function(Value)
-    end
+    PlaceholderText = "Enter name",
+    Callback = function()
+        -- Function goes here.
+    end,
 })
 
-Visuals:CreateToggle({
+VisualsTab:CreateToggle({
     Name = "Rainbow Name",
-    CurrentValue = false,
-
-    Callback = function(Value)
-    end
+    Callback = function()
+        -- Function goes here.
+    end,
 })
 
-Visuals:CreateSlider({
+VisualsTab:CreateSlider({
     Name = "Rainbow Name Setback",
-    Range = {0, 5},
-    Increment = 0.1,
-    CurrentValue = 0.5,
-
-    Callback = function(Value)
-    end
+    Range = {1, 100},
+    Increment = 1,
+    CurrentValue = 10,
+    Callback = function()
+        -- Function goes here.
+    end,
 })
 
-Visuals:CreateToggle({
+VisualsTab:CreateToggle({
     Name = "Rainbow Marshmallow",
-    CurrentValue = false,
-
-    Callback = function(Value)
-    end
+    Callback = function()
+        -- Function goes here.
+    end,
 })
 
-Visuals:CreateColorPicker({
+VisualsTab:CreateColorPicker({
     Name = "Color Name",
-    Color = Color3.fromRGB(255, 182, 193),
-
-    Callback = function(Value)
-    end
+    Color = Color3.fromRGB(255, 255, 255),
+    Callback = function()
+        -- Function goes here.
+    end,
 })
 
-Visuals:CreateButton({
+VisualsTab:CreateButton({
     Name = "Fake #1 Leaderboard",
     Callback = function()
-    end
+        -- Function goes here.
+    end,
 })
 
-Visuals:CreateSection("Skins")
+VisualsTab:CreateSection("Skins")
 
-Visuals:CreateDropdown({
-    Name = "Skins (Client)",
-
-    Options = {
-        "None"
-    },
-
-    CurrentOption = {
-        "None"
-    },
-
-    MultipleOptions = false,
-
-    Callback = function(Value)
-    end
-})
-
-Visuals:CreateDropdown({
-    Name = "Marshmallows (Client)",
-
-    Options = {
-        "None"
-    },
-
-    CurrentOption = {
-        "None"
-    },
-
-    MultipleOptions = false,
-
-    Callback = function(Value)
-    end
-})
-
-Visuals:CreateButton({
-    Name = "Get all Skins (marsh and skins in inventory)",
-
+VisualsTab:CreateDropdown({
+    Name = "Skins",
+    Options = {},
+    CurrentOption = {},
     Callback = function()
-    end
+        -- Function goes here.
+    end,
 })
 
-Visuals:CreateSection("Custom")
+VisualsTab:CreateDropdown({
+    Name = "Marshmallows",
+    Options = {},
+    CurrentOption = {},
+    Callback = function()
+        -- Function goes here.
+    end,
+})
 
-Visuals:CreateInput({
+VisualsTab:CreateButton({
+    Name = "Get all Skins",
+    Callback = function()
+        -- Function goes here.
+    end,
+})
+
+VisualsTab:CreateSection("Custom")
+
+VisualsTab:CreateInput({
     Name = "Name Custom Skin",
-    CurrentValue = "",
-    PlaceholderText = "Enter skin name...",
-    ClearTextAfterFocusLost = false,
-
-    Callback = function(Value)
-    end
-})
-
-Visuals:CreateDropdown({
-    Name = "Shirts",
-
-    Options = {
-        "None"
-    },
-
-    CurrentOption = {
-        "None"
-    },
-
-    MultipleOptions = false,
-
-    Callback = function(Value)
-    end
-})
-
-Visuals:CreateDropdown({
-    Name = "Pants",
-
-    Options = {
-        "None"
-    },
-
-    CurrentOption = {
-        "None"
-    },
-
-    MultipleOptions = false,
-
-    Callback = function(Value)
-    end
-})
-
-Visuals:CreateDropdown({
-    Name = "Accessories",
-
-    Options = {
-        "None"
-    },
-
-    CurrentOption = {
-        "None"
-    },
-
-    MultipleOptions = false,
-
-    Callback = function(Value)
-    end
-})
-
-Visuals:CreateButton({
-    Name = "Save Custom Skin",
-
+    PlaceholderText = "Custom Skin Name",
     Callback = function()
-    end
+        -- Function goes here.
+    end,
 })
 
-Visuals:CreateDropdown({
+VisualsTab:CreateDropdown({
+    Name = "Shirts",
+    Options = {},
+    CurrentOption = {},
+    Callback = function()
+        -- Function goes here.
+    end,
+})
+
+VisualsTab:CreateDropdown({
+    Name = "Pants",
+    Options = {},
+    CurrentOption = {},
+    Callback = function()
+        -- Function goes here.
+    end,
+})
+
+VisualsTab:CreateDropdown({
+    Name = "Accessories",
+    Options = {},
+    CurrentOption = {},
+    Callback = function()
+        -- Function goes here.
+    end,
+})
+
+VisualsTab:CreateButton({
+    Name = "Save Custom Skin",
+    Callback = function()
+        -- Function goes here.
+    end,
+})
+
+VisualsTab:CreateDropdown({
     Name = "Load Custom Skin",
-
-    Options = {
-        "None"
-    },
-
-    CurrentOption = {
-        "None"
-    },
-
-    MultipleOptions = false,
-
-    Callback = function(Value)
-    end
+    Options = {},
+    CurrentOption = {},
+    Callback = function()
+        -- Function goes here.
+    end,
 })
 
 --========================================================--
 -- SETTINGS
 --========================================================--
 
-Settings:CreateSection("Heavely Hub")
+local SettingsTab = WrapTab(Window:CreateTab({
+    Name = "Settings",
+    Icon = "settings",
+}))
 
-Settings:CreateLabel({
-    Name = "Heavily inspired by Syla Hub and Dramaware;"
+SettingsTab:CreateSection("Information")
+
+SettingsTab:CreateLabel({
+    Text = "Heavily inspired by Syla Hub and Dramaware ♥️",
+    Style = 1,
 })
 
-Settings:CreateLabel({
-    Name = "V1.0 Soon Autoplay!"
-})
-
-Settings:CreateSection("Game Mode")
-
-Settings:CreateLabel({
-    Name = "Total Roblox Drama • Camp"
+SettingsTab:CreateLabel({
+    Text = "V1.0 Soon Autoplay ♥️",
+    Style = 1,
 })
 
 --========================================================--
--- END OF UI SKELETON
+-- END
 --========================================================--
