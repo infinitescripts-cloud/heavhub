@@ -20,3 +20,62 @@ local Window = Luna:CreateWindow({
         Key = {"Hello"}
     }
 })
+
+-- Home Tab
+Window:CreateHomeTab({
+    SupportedExecutors = {},
+    DiscordInvite = "https://discord.gg/nebula-softworks-1175654067332218930",
+    Icon = 1
+})
+
+-- Custom Tab
+local Tab = Window:CreateTab({
+    Name = "Main",
+    Icon = "view_in_ar",
+    ImageSource = "Material",
+    ShowTitle = true
+})
+
+-- Custom Tab
+local Tab = Window:CreateTab({
+    Name = "Challenges",
+    Icon = "view_in_ar",
+    ImageSource = "Material",
+    ShowTitle = true
+})
+
+-- Custom Tab
+local Tab = Window:CreateTab({
+    Name = "Visuals",
+    Icon = "view_in_ar",
+    ImageSource = "Material",
+    ShowTitle = true
+})
+
+-- Custom Tab
+local Tab = Window:CreateTab({
+    Name = "Characters",
+    Icon = "view_in_ar",
+    ImageSource = "Material",
+    ShowTitle = true
+})
+
+-- Custom Tab
+local Tab = Window:CreateTab({
+    Name = "Universal",
+    Icon = "view_in_ar",
+    ImageSource = "Material",
+    ShowTitle = true
+})
+
+-- Built-in Theme & Config Tab
+local SettingsTab = Window:CreateTab({
+    Name = "Settings",
+    Icon = "settings",
+    ImageSource = "Material",
+    ShowTitle = true
+})
+
+SettingsTab:BuildThemeSection()
+SettingsTab:BuildConfigSection()
+
