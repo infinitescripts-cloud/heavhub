@@ -36,6 +36,49 @@ local Tab = Window:CreateTab({
     ShowTitle = true
 })
 
+-- Custom Tab
+local Tab = Window:CreateTab({
+    Name = "Challenges",
+    Icon = "emoji_events",
+    ImageSource = "Material",
+    ShowTitle = true
+})
+
+-- Custom Tab
+local Tab = Window:CreateTab({
+    Name = "Visuals",
+    Icon = "visibility",
+    ImageSource = "Material",
+    ShowTitle = true
+})
+
+-- Custom Tab
+local Tab = Window:CreateTab({
+    Name = "Characters",
+    Icon = "person",
+    ImageSource = "Material",
+    ShowTitle = true
+})
+
+-- Custom Tab
+local Tab = Window:CreateTab({
+    Name = "Universal",
+    Icon = "public",
+    ImageSource = "Material",
+    ShowTitle = true
+})
+
+-- Built-in Theme & Config Tab
+local SettingsTab = Window:CreateTab({
+    Name = "Settings",
+    Icon = "settings",
+    ImageSource = "Material",
+    ShowTitle = true
+})
+
+SettingsTab:BuildThemeSection()
+SettingsTab:BuildConfigSection()
+
 -- =======================================================
 -- SECTION 1: OBBIES
 -- =======================================================
@@ -87,46 +130,4 @@ MainTab:CreateToggle({
     end,
 })
 
--- Custom Tab
-local Tab = Window:CreateTab({
-    Name = "Challenges",
-    Icon = "emoji_events",
-    ImageSource = "Material",
-    ShowTitle = true
-})
-
--- Custom Tab
-local Tab = Window:CreateTab({
-    Name = "Visuals",
-    Icon = "visibility",
-    ImageSource = "Material",
-    ShowTitle = true
-})
-
--- Custom Tab
-local Tab = Window:CreateTab({
-    Name = "Characters",
-    Icon = "person",
-    ImageSource = "Material",
-    ShowTitle = true
-})
-
--- Custom Tab
-local Tab = Window:CreateTab({
-    Name = "Universal",
-    Icon = "public",
-    ImageSource = "Material",
-    ShowTitle = true
-})
-
--- Built-in Theme & Config Tab
-local SettingsTab = Window:CreateTab({
-    Name = "Settings",
-    Icon = "settings",
-    ImageSource = "Material",
-    ShowTitle = true
-})
-
-SettingsTab:BuildThemeSection()
-SettingsTab:BuildConfigSection()
 
