@@ -506,10 +506,15 @@ Main:CreateToggle({
 Main:CreateButton({
     Name = "Detect Teamers",
     Callback = function()
-        local season = RS:FindFirstChild("Season")
-        local playersFolder = season
-            and season:FindFirstChild("Players")
+        local PlayersService = game:GetService("Players")
+        local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
+        local season = ReplicatedStorage:FindFirstChild("Season")
+        if not season then
+            return
+        end
+
+        local playersFolder = season:FindFirstChild("Players")
         if not playersFolder then
             return
         end
@@ -518,34 +523,37 @@ Main:CreateButton({
             local data = playersFolder:FindFirstChild(player.Name)
 
             if data and data.Value ~= "" then
-                return data.Value
+                return tostring(data.Value)
             end
 
             return player.Name
         end
 
         local found = false
-        local allPlayers = Players:GetPlayers()
+        local playerList = PlayersService:GetPlayers()
 
-        for i, p1 in ipairs(allPlayers) do
-            for j, p2 in ipairs(allPlayers) do
-                if j > i then
-                    local ok, friends = pcall(function()
-                        return p1:IsFriendsWith(p2.UserId)
-                    end)
+        for i = 1, #playerList do
+            local p1 = playerList[i]
 
-                    if ok and friends then
-                        found = true
+            for j = i + 1, #playerList do
+                local p2 = playerList[j]
 
-                        notify(
-                            "Teamer Detected!",
-                            getInGameName(p1)
-                                .. " is teaming with "
-                                .. getInGameName(p2)
-                        )
+                local success, areFriends = pcall(function()
+                    return p1:IsFriendsWith(p2.UserId)
+                end)
 
-                        task.wait(0.6)
-                    end
+                if success and areFriends then
+                    found = true
+
+                    local name1 = getInGameName(p1)
+                    local name2 = getInGameName(p2)
+
+                    notify(
+                        "Teamer Detected!",
+                        name1 .. " is teaming with " .. name2
+                    )
+
+                    task.wait(0.6)
                 end
             end
         end
