@@ -323,7 +323,7 @@ Main:CreateButton({
 })
 
 Main:CreateButton({
-    Name = "Auto Get Statue",
+    Name = "Get Statue Immediately",
     Callback = function()
         task.spawn(function()
             for _ = 1, 50 do
@@ -332,8 +332,6 @@ Main:CreateButton({
             end
         end)
     end
-})
-
 })
 
 Main:CreateButton({
