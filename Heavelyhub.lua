@@ -31,7 +31,7 @@ Window:CreateHomeTab({
 -- Custom Tab
 local Tab = Window:CreateTab({
     Name = "Main",
-    Icon = "view_in_ar",
+    Icon = "star",
     ImageSource = "Material",
     ShowTitle = true
 })
@@ -39,7 +39,7 @@ local Tab = Window:CreateTab({
 -- Custom Tab
 local Tab = Window:CreateTab({
     Name = "Challenges",
-    Icon = "view_in_ar",
+    Icon = "emoji_events",
     ImageSource = "Material",
     ShowTitle = true
 })
@@ -47,7 +47,7 @@ local Tab = Window:CreateTab({
 -- Custom Tab
 local Tab = Window:CreateTab({
     Name = "Visuals",
-    Icon = "view_in_ar",
+    Icon = "visibility",
     ImageSource = "Material",
     ShowTitle = true
 })
@@ -55,7 +55,7 @@ local Tab = Window:CreateTab({
 -- Custom Tab
 local Tab = Window:CreateTab({
     Name = "Characters",
-    Icon = "view_in_ar",
+    Icon = "person",
     ImageSource = "Material",
     ShowTitle = true
 })
@@ -63,7 +63,7 @@ local Tab = Window:CreateTab({
 -- Custom Tab
 local Tab = Window:CreateTab({
     Name = "Universal",
-    Icon = "view_in_ar",
+    Icon = "public",
     ImageSource = "Material",
     ShowTitle = true
 })
