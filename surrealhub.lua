@@ -5,29 +5,16 @@
 ]]
 
 --==================================================
--- FORCE LOAD LUNA (WITH FALLBACKS)
+-- LOAD LUNA
 --==================================================
 
-local Luna
-local urls = {
-    "https://raw.githubusercontent.com/Nebula-Softworks/Luna-Interface-Suite/master/source.lua",
-    "https://raw.githubusercontent.com/infinitescripts-cloud/Luna-Interface-Suite/master/source.lua_no_interface_hidden.lua"
-}
-
-for _, url in ipairs(urls) do
-    local ok, result = pcall(function()
-        return loadstring(game:HttpGet(url, true))()
-    end)
-    if ok and result then
-        Luna = result
-        break
-    end
-    task.wait(0.5)
-end
+local Luna = loadstring(game:HttpGet(
+    "https://raw.githubusercontent.com/infinitescripts-cloud/Luna-Interface-Suite/master/source.lua_no_interface_hidden.lua",
+    true
+))()
 
 if not Luna then
-    warn("[Surreal Hub] Critical Error: Failed to load Luna Interface Suite from all sources.")
-    return
+    return warn("[Surreal Hub] Failed to load Luna Interface Suite.")
 end
 
 --==================================================
@@ -129,7 +116,7 @@ function Utilities.teleportTo(x, y, z)
     end
 end
 
---[[ Part 3/10 — Registry, Map Presets, Typefaces ]]
+--[[ Part 3/10 — Registry & Typefaces ]]
 
 --==================================================
 -- UTILITY REGISTRY
@@ -172,134 +159,6 @@ function Utilities.launchUtility(id)
             return
         end
     end
-end
-
---==================================================
--- MAP PRESETS
---==================================================
-
-local MapPresets = {}
-
-function MapPresets.applyHalloween()
-    local orange  = Color3.fromRGB(255, 117, 24)
-    local slate   = Color3.fromRGB(80, 78, 84)
-    local crimson = Color3.fromRGB(120, 22, 22)
-    local swamp   = Color3.fromRGB(48, 74, 42)
-
-    Utilities.forEachBasePart(function(part)
-        if Utilities.nameContains(part, "leaf") or Utilities.nameContains(part, "foliage") then
-            part.Color = orange
-            part.Material = Enum.Material.Grass
-        elseif Utilities.nameContains(part, "grass") or Utilities.nameContains(part, "ground") then
-            part.Color = swamp
-            part.Material = Enum.Material.Grass
-        elseif Utilities.nameContains(part, "rock") or Utilities.nameContains(part, "stone") then
-            part.Color = slate
-            part.Material = Enum.Material.Slate
-        elseif Utilities.nameContains(part, "water") or Utilities.nameContains(part, "lake") then
-            part.Color = crimson
-            part.Material = Enum.Material.Glass
-        elseif Utilities.hasBrick(part, "olivine") or Utilities.hasBrick(part, "dark green") then
-            part.Color = orange
-        end
-    end)
-
-    Lighting.Ambient        = Color3.fromRGB(60, 30, 60)
-    Lighting.OutdoorAmbient = Color3.fromRGB(85, 55, 70)
-    Lighting.Brightness     = 2
-    Lighting.ClockTime      = 0
-    Lighting.FogEnd         = 600
-    Lighting.FogColor       = Color3.fromRGB(60, 30, 45)
-
-    Utilities.notify("Map Applied", "Halloween preset loaded.", 4)
-end
-
-function MapPresets.applyChristmas()
-    local snow  = Color3.fromRGB(245, 248, 252)
-    local ice   = Color3.fromRGB(190, 220, 245)
-    local fir   = Color3.fromRGB(36, 92, 52)
-    local candy = Color3.fromRGB(198, 40, 40)
-    local wood  = Color3.fromRGB(92, 62, 40)
-
-    Utilities.forEachBasePart(function(part)
-        if Utilities.nameContains(part, "leaf") or Utilities.nameContains(part, "foliage") then
-            part.Color = fir
-            part.Material = Enum.Material.Grass
-        elseif Utilities.nameContains(part, "grass") or Utilities.nameContains(part, "ground") then
-            part.Color = snow
-            part.Material = Enum.Material.Snow
-        elseif Utilities.nameContains(part, "rock") or Utilities.nameContains(part, "stone") then
-            part.Color = ice
-            part.Material = Enum.Material.Ice
-        elseif Utilities.nameContains(part, "water") or Utilities.nameContains(part, "lake") then
-            part.Color = ice
-            part.Material = Enum.Material.Glass
-        elseif Utilities.nameContains(part, "wood") or Utilities.nameContains(part, "log") then
-            part.Color = wood
-            part.Material = Enum.Material.Wood
-        elseif Utilities.hasBrick(part, "olivine") or Utilities.hasBrick(part, "dark green") then
-            part.Color = candy
-            part.Material = Enum.Material.SmoothPlastic
-        end
-    end)
-
-    pcall(function()
-        local camp = workspace.Map["Roblox Drama: Camp"]
-        local bg   = camp.Map.Mountains["Background Mountains"]
-        for _, v in pairs(bg:GetDescendants()) do
-            if v:IsA("MeshPart") and v.Name == "MeshPart" and v.BrickColor == BrickColor.new("Grime") then
-                v.Color = snow
-                v.Material = Enum.Material.Snow
-            elseif v:IsA("MeshPart") and v.Name == "Water" then
-                v.Color = ice
-                v.Material = Enum.Material.Glass
-            end
-        end
-        local lakeWater = camp.Map.Lake:FindFirstChild("Water")
-        if lakeWater and lakeWater:IsA("MeshPart") then
-            lakeWater.Color = ice
-            lakeWater.Material = Enum.Material.Glass
-        end
-    end)
-
-    Lighting.Ambient        = Color3.fromRGB(140, 160, 180)
-    Lighting.OutdoorAmbient = Color3.fromRGB(160, 180, 200)
-    Lighting.Brightness     = 3
-    Lighting.ClockTime      = 14
-    Lighting.FogEnd         = 900
-    Lighting.FogColor       = Color3.fromRGB(200, 220, 235)
-
-    Utilities.notify("Map Applied", "Christmas preset loaded.", 4)
-end
-
-function MapPresets.applyValentine()
-    local pink     = Color3.fromRGB(255, 152, 220)
-    local softPink = Color3.fromRGB(255, 190, 225)
-    local deepRose = Color3.fromRGB(190, 60, 120)
-
-    Utilities.forEachBasePart(function(part)
-        if Utilities.nameContains(part, "leaf") or Utilities.nameContains(part, "foliage") then
-            part.Color = softPink
-            part.Material = Enum.Material.SmoothPlastic
-        elseif Utilities.nameContains(part, "grass") or Utilities.nameContains(part, "ground") then
-            part.Color = pink
-            part.Material = Enum.Material.SmoothPlastic
-        elseif Utilities.nameContains(part, "water") or Utilities.nameContains(part, "lake") then
-            part.Color = deepRose
-            part.Material = Enum.Material.Glass
-        elseif Utilities.hasBrick(part, "olivine") or Utilities.hasBrick(part, "dark green") then
-            part.Color = pink
-            part.Material = Enum.Material.SmoothPlastic
-        end
-    end)
-
-    Lighting.Ambient        = Color3.fromRGB(180, 120, 150)
-    Lighting.OutdoorAmbient = Color3.fromRGB(200, 150, 175)
-    Lighting.Brightness     = 4
-    Lighting.ClockTime      = 15
-    Lighting.FogColor       = Color3.fromRGB(255, 200, 225)
-
-    Utilities.notify("Map Applied", "Valentine preset loaded.", 4)
 end
 
 --==================================================
@@ -358,242 +217,6 @@ function TypefaceManager.load(id, displayName, ttfFile, jsonFile, source, attrKe
     Utilities.notify("Typeface Applied", displayName .. " is now active.", 4)
 end
 
---[[ Part 4/10 — Skin & Marshmallow Data ]]
-
---==================================================
--- SKIN & MARSHMALLOW DATA
---==================================================
-
-local SkinData = {
-    list    = {},
-    byLabel = {},
-    byFace  = {},
-}
-
-local MarshmallowData = {
-    textures = {
-        ["Marshmallow"]              = "http://www.roblox.com/asset/?id=4921967564",
-        ["Mr.Coconut Marshmallow"]   = "http://www.roblox.com/asset/?id=4993225404",
-        ["Cook Surprise Marshmallow"]= "http://www.roblox.com/asset/?id=4993211976",
-        ["Soda Marshmallow"]         = "http://www.roblox.com/asset/?id=13424792834",
-        ["Dino Marshmallow"]         = "http://www.roblox.com/asset/?id=13424788699",
-        ["Official 3-4 Marshmallow"] = "http://www.roblox.com/asset/?id=9005433388",
-        ["Furious Trout Marshmallow"]= "http://www.roblox.com/asset/?id=13557360275",
-        ["Orange Marshmallow"]       = "http://www.roblox.com/asset/?id=4993231360",
-        ["Cabbage Marshmallow"]      = "http://www.roblox.com/asset/?id=13424785412",
-        ["Toxic Marshmallow"]        = "http://www.roblox.com/asset/?id=4939073413",
-        ["Grip Marshmallow"]         = "http://www.roblox.com/asset/?id=14253207872",
-        ["Vote Me Marshmallow"]      = "http://www.roblox.com/asset/?id=13424797492",
-        ["Honey Dipped Marshmallow"] = "http://www.roblox.com/asset/?id=13424799638",
-        ["Banana Marshmallow"]       = "http://www.roblox.com/asset/?id=4922748526",
-        ["Cursed Idol Marshmallow"]  = "http://www.roblox.com/asset/?id=4993221853",
-        ["Choc Dipped Marshmallow"]  = "http://www.roblox.com/asset/?id=10420319581",
-        ["Candyfloss Marshmallow"]   = "http://www.roblox.com/asset/?id=4939071806",
-        ["Guilty Gift Marshmallow"]  = "http://www.roblox.com/asset/?id=13424790186",
-        ["Coconut Marshmallow"]      = "http://www.roblox.com/asset/?id=4922749819",
-        ["Official Marshmallow"]     = "http://www.roblox.com/asset/?id=6190482040",
-        ["Chocolate Marshmallow"]    = "http://www.roblox.com/asset/?id=8989965765",
-        ["Toasted Marshmallow"]      = "http://www.roblox.com/asset/?id=11109548044",
-        ["Surfboard Marshmallow"]    = "http://www.roblox.com/asset/?id=14253216830",
-        ["Official 2 Marshmallow"]   = "http://www.roblox.com/asset/?id=6918605850",
-        ["Stink Bomb Marshmallow"]   = "http://www.roblox.com/asset/?id=14253212538",
-        ["Deathly Frog Marshmallow"] = "http://www.roblox.com/asset/?id=13557357445",
-        ["Heart Marshmallow"]        = "http://www.roblox.com/asset/?id=11109545563",
-        ["Burnt Marshmallow"]        = "http://www.roblox.com/asset/?id=4939257688",
-        ["Spooky Skull Marshmallow"] = "http://www.roblox.com/asset/?id=13424794215",
-        ["Camo Marshmallow"]         = "http://www.roblox.com/asset/?id=4993218908",
-        ["Star Barrel Marshmallow"]  = "http://www.roblox.com/asset/?id=13557362587",
-        ["Candycane Marshmallow"]    = "http://www.roblox.com/asset/?id=8087099712",
-        ["Claus Marshmallow"]        = "http://www.roblox.com/asset/?id=8087103731",
-        ["Gingerbread Marshmallow"]  = "http://www.roblox.com/asset/?id=8087104305",
-        ["Snowflake Marshmallow"]    = "http://www.roblox.com/asset/?id=8087108522",
-        ["Snowman Marshmallow"]      = "http://www.roblox.com/asset/?id=8087109234",
-        ["Xmas Tree Marshmallow"]    = "http://www.roblox.com/asset/?id=8087102391",
-        ["Official 5 Marshmallow"]   = "http://www.roblox.com/asset/?id=12089683577",
-        ["Refresher Marshmallow"]    = "http://www.roblox.com/asset/?id=10420322407",
-        ["Friendly Fish Marshmallow"]= "http://www.roblox.com/asset/?id=6213300124",
-        ["Popcorn Marshmallow"]      = "http://www.roblox.com/asset/?id=14253210682",
-        ["Salt&Pepper Marshmallow"]  = "http://www.roblox.com/asset/?id=4939073043",
-        ["Grape Marshmallow"]        = "http://www.roblox.com/asset/?id=4939072171",
-        ["Mutant Marshmallow"]       = "http://www.roblox.com/asset/?id=4993228141",
-        ["Blue Sky Marshmallow"]     = "http://www.roblox.com/asset/?id=6213301823",
-        ["Rainbow Marshmallow"]      = "http://www.roblox.com/asset/?id=11109546611",
-        ["Animatronic Marshmallow"]  = "http://www.roblox.com/asset/?id=14253197608",
-        ["Fly Trap Marshmallow"]     = "http://www.roblox.com/asset/?id=13557358447",
-        ["Lightning Marshmallow"]    = "http://www.roblox.com/asset/?id=6213299603",
-        ["Official 6 Marshmallow"]   = "http://www.roblox.com/asset/?id=13883154348",
-        ["Cave Marshmallow"]         = "http://www.roblox.com/asset/?id=14253202968",
-        ["Briefcase Marshmallow"]    = "http://www.roblox.com/asset/?id=14253200770",
-        ["Alien Slime Marshmallow"]  = "http://www.roblox.com/asset/?id=14253195386",
-        ["Strawberry Marshmallow"]   = "http://www.roblox.com/asset/?id=8989965284",
-        ["Gaffer Marshmallow"]       = "http://www.roblox.com/asset/?id=14253205269",
-        ["Bane Marshmallow"]         = "http://www.roblox.com/asset/?id=4939072726",
-        ["All Star Marshmallow"]     = "http://www.roblox.com/asset/?id=4993216167",
-        ["Voting Machine Marshmallow"]= "http://www.roblox.com/asset/?id=14253219599",
-        ["Mint Choc Chip Marshmallow"]= "http://www.roblox.com/asset/?id=10420505533",
-        ["Dropped Marshmallow"]      = "http://www.roblox.com/asset/?id=6213298209",
-        ["Spiderweb Marshmallow"]    = "http://www.roblox.com/asset/?id=14891850347",
-        ["Mummy Marshmallow"]        = "http://www.roblox.com/asset/?id=14891849082",
-        ["Jack-o-lantern Marshmallow"]="http://www.roblox.com/asset/?id=14891848232",
-        ["Cauldron Marshmallow"]     = "http://www.roblox.com/asset/?id=14891845147",
-        ["Ghost Marshmallow"]        = "http://www.roblox.com/asset/?id=14891847267",
-        ["Candy Corn Marshmallow"]   = "http://www.roblox.com/asset/?id=14891843386",
-        ["Black Cat Marshmallow"]    = "http://www.roblox.com/asset/?id=14891842127",
-        ["Frankenstein Marshmallow"] = "http://www.roblox.com/asset/?id=14891846020",
-        ["Candy Cane Marshmallow"]   = "http://www.roblox.com/asset/?id=15484725814",
-        ["Christmas Gift Marshmallow"]="http://www.roblox.com/asset/?id=15484726913",
-        ["Christmas Tree Marshmallow"]="http://www.roblox.com/asset/?id=15484727551",
-        ["Festive Lights Marshmallow"]="http://www.roblox.com/asset/?id=15484728253",
-        ["Frosted Marshmallow"]      = "http://www.roblox.com/asset/?id=15484728905",
-        ["Hot Chocolate Marshmallow"]= "http://www.roblox.com/asset/?id=15484729538",
-        ["Jingle Bell Marshmallow"]  = "http://www.roblox.com/asset/?id=15484730291",
-        ["Mr Snow Marshmallow"]      = "http://www.roblox.com/asset/?id=15484731148",
-        ["Reindeer Marshmallow"]     = "http://www.roblox.com/asset/?id=15484731823",
-        ["Santa Suit Marshmallow"]   = "http://www.roblox.com/asset/?id=15484732509",
-        ["Snowglobe Marshmallow"]    = "http://www.roblox.com/asset/?id=15484733560",
-        ["The Grunch Marshmallow"]   = "http://www.roblox.com/asset/?id=15484734379",
-        ["Bacon Grease Marshmallow"] = "http://www.roblox.com/asset/?id=16029143731",
-        ["Pink Paint Marshmallow"]   = "http://www.roblox.com/asset/?id=16029151877",
-        ["Skunk Tail Marshmallow"]   = "http://www.roblox.com/asset/?id=16029163767",
-        ["Rodent Face Marshmallow"]  = "http://www.roblox.com/asset/?id=16029162747",
-        ["Candy Marshmallow"]        = "http://www.roblox.com/asset/?id=16029146948",
-        ["Lychee Soda Marshmallow"]  = "http://www.roblox.com/asset/?id=16029149121",
-        ["Banana Soda Marshmallow"]  = "http://www.roblox.com/asset/?id=16029144639",
-        ["The Wolves Marshmallow"]   = "http://www.roblox.com/asset/?id=16029164794",
-        ["Young Chester Marshmallow"]= "http://www.roblox.com/asset/?id=16029185414",
-        ["Owl Mascot Marshmallow"]   = "http://www.roblox.com/asset/?id=16029150192",
-        ["Racoon Marshmallow"]       = "http://www.roblox.com/asset/?id=16029160256",
-        ["Abstract Cake Marshmallow"]= "http://www.roblox.com/asset/?id=16029142769",
-        ["Circus Snake Marshmallow"] = "http://www.roblox.com/asset/?id=16029148014",
-        ["Bogey Marshmallow"]        = "http://www.roblox.com/asset/?id=16029145643",
-        ["Sap Removal Marshmallow"]  = "http://www.roblox.com/asset/?id=16029165998",
-        ["Carrot Marshmallow"]       = "http://www.roblox.com/asset/?id=16735788642",
-        ["Easter Basket Marshmallow"]= "http://www.roblox.com/asset/?id=16735790050",
-        ["Easter Bunny Marshmallow"] = "http://www.roblox.com/asset/?id=16726342799",
-        ["Easter Chick Marshmallow"] = "http://www.roblox.com/asset/?id=16735787584",
-        ["Easter Egg Marshmallow"]   = "http://www.roblox.com/asset/?id=16735791814",
-        ["Lion Marshmallow"]         = "http://www.roblox.com/asset/?id=16726346946",
-        ["Official 7 Marshmallow"]   = "http://www.roblox.com/asset/?id=16752097514",
-    },
-    list = {},
-}
-
-local function buildSkinData()
-    pcall(function()
-        local root = RS.Products.CharacterSelection.Characters
-        for _, gender in ipairs(root:GetChildren()) do
-            for _, character in ipairs(gender:GetChildren()) do
-                local skins = character:FindFirstChild("Skins")
-                if skins then
-                    local prefix = gender.Name .. " | " .. character.Name
-                    for _, skin in ipairs(skins:GetChildren()) do
-                        local label = prefix .. " | " .. skin.Name
-                        table.insert(SkinData.list, label)
-                        SkinData.byLabel[label] = skin
-                        local face = skin:FindFirstChildOfClass("Decal") or character:FindFirstChildOfClass("Decal")
-                        SkinData.byFace[label] = face and face.Texture or ""
-                    end
-                end
-            end
-        end
-    end)
-    table.sort(SkinData.list)
-end
-
-buildSkinData()
-
-for name in pairs(MarshmallowData.textures) do
-    table.insert(MarshmallowData.list, name)
-end
-table.sort(MarshmallowData.list)
-
-local function findAttachment(character, attachmentName)
-    for _, obj in ipairs(character:GetDescendants()) do
-        if obj:IsA("Attachment") and obj.Name == attachmentName then
-            return obj
-        end
-    end
-end
-
-local function applySkin(skinObject, faceTexture)
-    local char = LocalPlayer.Character
-    if not char then return end
-
-    for _, child in ipairs(char:GetChildren()) do
-        if child:IsA("Shirt") or child:IsA("Pants") or child:IsA("Accessory")
-            or child:IsA("ShirtGraphic") or child:IsA("CharacterMesh") or child:IsA("Hat") then
-            child:Destroy()
-        end
-    end
-
-    local function applyFace()
-        local head = char:FindFirstChild("Head")
-        if not head or not faceTexture or faceTexture == "" then return end
-        local faceControls = head:FindFirstChildOfClass("FaceControls")
-        if faceControls then faceControls:Destroy() end
-        local surface = head:FindFirstChildOfClass("SurfaceAppearance")
-        if surface then surface.ColorMap = faceTexture end
-        local decal = head:FindFirstChildOfClass("Decal")
-        if not decal then
-            decal = Instance.new("Decal")
-            decal.Name = "face"
-            decal.Face = Enum.NormalId.Front
-            decal.Parent = head
-        end
-        decal.Texture = faceTexture
-    end
-
-    applyFace()
-    task.delay(0.2, applyFace)
-    task.delay(0.7, applyFace)
-
-    local clothes = skinObject:FindFirstChild("Clothes")
-    if not clothes then return end
-
-    local shirt = clothes:FindFirstChildOfClass("Shirt")
-    if shirt then shirt:Clone().Parent = char end
-
-    local pants = clothes:FindFirstChildOfClass("Pants")
-    if pants then pants:Clone().Parent = char end
-
-    local bodyColors = clothes:FindFirstChildOfClass("BodyColors")
-    if bodyColors then
-        local existing = char:FindFirstChildOfClass("BodyColors")
-        if existing then existing:Destroy() end
-        bodyColors:Clone().Parent = char
-    end
-
-    for _, child in ipairs(clothes:GetChildren()) do
-        if child:IsA("CharacterMesh") then child:Clone().Parent = char end
-    end
-
-    for _, child in ipairs(clothes:GetChildren()) do
-        if child:IsA("Accessory") then
-            local clone = child:Clone()
-            local handle = clone:FindFirstChild("Handle")
-            if handle then
-                handle.Massless = true
-                local handleAttachment
-                for _, item in ipairs(handle:GetDescendants()) do
-                    if item:IsA("Attachment") then handleAttachment = item break end
-                end
-                if handleAttachment then
-                    local charAttachment = findAttachment(char, handleAttachment.Name)
-                    if charAttachment then
-                        local rigid = Instance.new("RigidConstraint")
-                        rigid.Attachment0 = charAttachment
-                        rigid.Attachment1 = handleAttachment
-                        rigid.Parent = clone
-                    end
-                end
-            end
-            clone.Parent = char
-        elseif child:IsA("Hat") then
-            child:Clone().Parent = char
-        end
-    end
-end
-
 --[[ Part 5/10 — Runtime State, Window, Tabs ]]
 
 --==================================================
@@ -614,7 +237,6 @@ local State = {
     autoCollect     = false,
     autoMath        = false,
     mathDelay       = 0,
-    autoDodgeballs  = false,
     dodgeballGuard  = false,
     paintballGuard  = false,
 
@@ -623,9 +245,6 @@ local State = {
     cliffAddedConn   = nil,
     cliffRemovedConn = nil,
     cliffRenderConn  = nil,
-
-    rainbowMallow = false,
-    rainbowConn   = nil,
 
     nameplatesEnabled   = false,
     nameplatePlayerConn = nil,
@@ -865,76 +484,6 @@ Main:CreateButton({
     end,
 })
 
-local function applyESPToModels(root, modelName, billboardName, highlightName, label)
-    for _, model in ipairs(root:GetDescendants()) do
-        if model.Name == modelName and model:IsA("Model") then
-            local anchor = model.PrimaryPart or model:FindFirstChildWhichIsA("BasePart")
-            if not anchor then continue end
-
-            if not model:FindFirstChild(highlightName) then
-                local highlight = Instance.new("Highlight")
-                highlight.Name = highlightName
-                highlight.FillTransparency = 1
-                highlight.OutlineColor = Color3.new(1, 1, 1)
-                highlight.Parent = model
-            end
-
-            if not model:FindFirstChild(billboardName) then
-                local billboard = Instance.new("BillboardGui")
-                billboard.Name = billboardName
-                billboard.Size = UDim2.new(0, 240, 0, 60)
-                billboard.StudsOffset = Vector3.new(0, 3.5, 0)
-                billboard.AlwaysOnTop = true
-                billboard.Adornee = anchor
-                billboard.Parent = model
-
-                local text = Instance.new("TextLabel")
-                text.Size = UDim2.new(1, 0, 1, 0)
-                text.BackgroundTransparency = 1
-                text.Text = label
-                text.TextColor3 = Color3.new(1, 1, 1)
-                text.TextStrokeTransparency = 0
-                text.TextScaled = true
-                text.Font = Enum.Font.GothamBold
-                text.Parent = billboard
-            end
-        end
-    end
-end
-
-local function clearESP(root, modelName, billboardName, highlightName)
-    for _, model in ipairs(root:GetDescendants()) do
-        if model.Name == modelName then
-            if model:FindFirstChild(highlightName) then model[highlightName]:Destroy() end
-            if model:FindFirstChild(billboardName) then model[billboardName]:Destroy() end
-        end
-    end
-end
-
-Main:CreateToggle({
-    Name = "Bag ESP",
-    CurrentValue = false,
-    Callback = function(enabled)
-        if enabled then
-            applyESPToModels(workspace.Idols, "Bag", "BagESP", "BagHighlight", "SAFETY BAG")
-        else
-            clearESP(workspace, "Bag", "BagESP", "BagHighlight")
-        end
-    end,
-}, "BagESP")
-
-Main:CreateToggle({
-    Name = "Safety Statue ESP",
-    CurrentValue = false,
-    Callback = function(enabled)
-        if enabled then
-            applyESPToModels(workspace.Idols, "SafetyStatue", "StatueESP", "StatueHighlight", "SAFETY STATUE")
-        else
-            clearESP(workspace, "SafetyStatue", "StatueESP", "StatueHighlight")
-        end
-    end,
-}, "SafetyStatueESP")
-
 --==================================================
 -- MAIN — EXTRAS
 --==================================================
@@ -997,7 +546,7 @@ Main:CreateButton({
         end
 
         if not found then
-            Utilities.notify("No Teamers Found", "No friend pairs detected in this lobby.", 5)
+            Utilities.notify("No Teamers Found", "No teamers are detected here.", 5)
         end
     end,
 })
@@ -1015,32 +564,6 @@ Main:CreateButton({
             Camera.CameraType = Enum.CameraType.Custom
             Camera.CameraSubject = hum
         end
-    end,
-})
-
-Main:CreateButton({
-    Name = "Destroy Extravagant Names",
-    Callback = function()
-        local function destroyLongTexts(root)
-            for _, obj in ipairs(root:GetDescendants()) do
-                local ok, text = pcall(function() return obj.Text end)
-                if ok and type(text) == "string" and #text > 750 then
-                    obj:Destroy()
-                end
-            end
-        end
-
-        for _, service in ipairs(game:GetChildren()) do destroyLongTexts(service) end
-        destroyLongTexts(LocalPlayer.PlayerGui)
-        destroyLongTexts(RS)
-        destroyLongTexts(workspace)
-
-        game.DescendantAdded:Connect(function(obj)
-            local ok, text = pcall(function() return obj.Text end)
-            if ok and type(text) == "string" and #text > 750 then
-                obj:Destroy()
-            end
-        end)
     end,
 })
 
@@ -1599,260 +1122,6 @@ Morphs:CreateButton({
     end,
 })
 
---==================================================
--- MORPHS — EXTRAS
---==================================================
-
-Morphs:CreateSection("Extras")
-
-Morphs:CreateButton({
-    Name = "Get all Skins (client)",
-    Callback = function()
-        local dataStore = LocalPlayer:WaitForChild("DataStore")
-        for _, category in ipairs(RS.Products.Shop.Items:GetChildren()) do
-            local categoryStore = dataStore:FindFirstChild(category.Name)
-            if categoryStore then
-                for _, item in ipairs(categoryStore:GetChildren()) do item:Destroy() end
-                for _, item in ipairs(category:GetChildren()) do item:Clone().Parent = categoryStore end
-            end
-        end
-    end,
-})
-
-Morphs:CreateDropdown({
-    Name = "Skins",
-    Options = {"None", table.unpack(SkinData.list)},
-    CurrentOption = {"None"},
-    MultipleOptions = false,
-    Callback = function(value)
-        local choice = type(value) == "table" and (value[1] or value.Option) or value
-        if choice == "None" or not choice then return end
-        if SkinData.byLabel[choice] then
-            applySkin(SkinData.byLabel[choice], SkinData.byFace[choice])
-            Utilities.notify("Skin Applied", choice, 3)
-        end
-    end,
-})
-
-Morphs:CreateDropdown({
-    Name = "Marshmallows",
-    Options = {"None", table.unpack(MarshmallowData.list)},
-    CurrentOption = {"None"},
-    MultipleOptions = false,
-    Callback = function(value)
-        local choice = type(value) == "table" and (value[1] or value.Option) or value
-        if choice == "None" or not choice then return end
-        local texture = MarshmallowData.textures[choice]
-        if texture then
-            local char = LocalPlayer.Character
-            local head = char and char:FindFirstChild("Head")
-            local gui = head and head:FindFirstChild("MarshmallowGUI")
-            local sector = gui and gui:FindFirstChild("Sector")
-            local image = sector and sector:FindFirstChildOfClass("ImageLabel")
-            if image then image.Image = texture end
-            Utilities.notify("Marshmallow Applied", choice, 3)
-        end
-    end,
-})
-
---==================================================
--- MORPHS — CUSTOM BUILDER
---==================================================
-
-Morphs:CreateSection("Custom Morph")
-
-local morphSaveName = ""
-local shirtMap, pantsMap = {}, {}
-local shirtOptions, pantsOptions = {"None"}, {"None"}
-
-do
-    local seenShirt, seenPants = {}, {}
-    for label, skinObject in pairs(SkinData.byLabel) do
-        local clothes = skinObject:FindFirstChild("Clothes")
-        if clothes then
-            local shirt = clothes:FindFirstChildOfClass("Shirt")
-            if shirt and not seenShirt[shirt.ShirtTemplate or ""] then
-                seenShirt[shirt.ShirtTemplate or ""] = true
-                local shortName = label:match("| ([^|]+)$") or label
-                local key = shortName .. " (shirt)"
-                shirtMap[key] = shirt
-                table.insert(shirtOptions, key)
-            end
-            local pants = clothes:FindFirstChildOfClass("Pants")
-            if pants and not seenPants[pants.PantsTemplate or ""] then
-                seenPants[pants.PantsTemplate or ""] = true
-                local shortName = label:match("| ([^|]+)$") or label
-                local key = shortName .. " (pants)"
-                pantsMap[key] = pants
-                table.insert(pantsOptions, key)
-            end
-        end
-    end
-    table.sort(shirtOptions)
-    table.sort(pantsOptions)
-end
-
-Morphs:CreateInput({
-    Name = "Name Morph",
-    PlaceholderText = "Enter morph name...",
-    CurrentValue = "",
-    Numeric = false,
-    MaxCharacters = nil,
-    Enter = false,
-    Callback = function(value) morphSaveName = value end,
-})
-
-Morphs:CreateDropdown({
-    Name = "Shirts",
-    Options = shirtOptions,
-    CurrentOption = {"None"},
-    MultipleOptions = false,
-    Callback = function(value)
-        local choice = type(value) == "table" and (value[1] or value.Option) or value
-        if choice == "None" or not choice then return end
-        local shirtTemplate = shirtMap[choice]
-        if not shirtTemplate then return end
-        local char = LocalPlayer.Character
-        if not char then return end
-        for _, child in ipairs(char:GetChildren()) do
-            if child:IsA("Shirt") then child:Destroy() end
-        end
-        shirtTemplate:Clone().Parent = char
-    end,
-})
-
-Morphs:CreateDropdown({
-    Name = "Pants",
-    Options = pantsOptions,
-    CurrentOption = {"None"},
-    MultipleOptions = false,
-    Callback = function(value)
-        local choice = type(value) == "table" and (value[1] or value.Option) or value
-        if choice == "None" or not choice then return end
-        local pantsTemplate = pantsMap[choice]
-        if not pantsTemplate then return end
-        local char = LocalPlayer.Character
-        if not char then return end
-        for _, child in ipairs(char:GetChildren()) do
-            if child:IsA("Pants") then child:Destroy() end
-        end
-        pantsTemplate:Clone().Parent = char
-    end,
-})
-
-Morphs:CreateButton({
-    Name = "Save Custom Morph",
-    Callback = function()
-        local saveName = tostring(morphSaveName or ""):match("^%s*(.-)%s*$")
-        if saveName == "" then
-            Utilities.notify("Save Failed", "Enter a name first.", 3)
-            return
-        end
-
-        local char = LocalPlayer.Character
-        if not char then return end
-
-        local payload = { accessories = {} }
-        local head = char:FindFirstChild("Head")
-        local face = head and head:FindFirstChildOfClass("Decal")
-        if face then payload.face = face.Texture end
-
-        local shirt = char:FindFirstChildOfClass("Shirt")
-        if shirt then payload.shirt = shirt.ShirtTemplate end
-
-        local pants = char:FindFirstChildOfClass("Pants")
-        if pants then payload.pants = pants.PantsTemplate end
-
-        for _, child in ipairs(char:GetChildren()) do
-            if child:IsA("Accessory") or child:IsA("Hat") then
-                table.insert(payload.accessories, child.Name)
-            end
-        end
-
-        pcall(function()
-            if not isfolder(CONFIG_ROOT) then makefolder(CONFIG_ROOT) end
-            if not isfolder(CONFIG_ROOT .. "/CustomSkins") then
-                makefolder(CONFIG_ROOT .. "/CustomSkins")
-            end
-            writefile(CONFIG_ROOT .. "/CustomSkins/" .. saveName .. ".json", HttpService:JSONEncode(payload))
-        end)
-
-        Utilities.notify("Morph Saved", saveName, 3)
-    end,
-})
-
-local function listSavedMorphs()
-    local names = {"None"}
-    pcall(function()
-        if not isfolder(CONFIG_ROOT) then makefolder(CONFIG_ROOT) end
-        if not isfolder(CONFIG_ROOT .. "/CustomSkins") then
-            makefolder(CONFIG_ROOT .. "/CustomSkins")
-        end
-        for _, path in ipairs(listfiles(CONFIG_ROOT .. "/CustomSkins")) do
-            local name = path:match("([^/\\]+)%.json$")
-            if name and name ~= "" then table.insert(names, name) end
-        end
-    end)
-    return names
-end
-
-Morphs:CreateDropdown({
-    Name = "Select Saved Custom Morph",
-    Options = listSavedMorphs(),
-    CurrentOption = {"None"},
-    MultipleOptions = false,
-    Callback = function(value)
-        local choice = type(value) == "table" and (value[1] or value.Option) or value
-        if choice == "None" or not choice then return end
-
-        local ok, raw = pcall(readfile, CONFIG_ROOT .. "/CustomSkins/" .. choice .. ".json")
-        if not ok or not raw then
-            Utilities.notify("Load Failed", "Config not found.", 3)
-            return
-        end
-
-        local decoded, payload = pcall(function() return HttpService:JSONDecode(raw) end)
-        if not decoded or not payload then return end
-
-        local char = LocalPlayer.Character
-        if not char then return end
-
-        for _, child in ipairs(char:GetChildren()) do
-            if child:IsA("Shirt") or child:IsA("Pants") or child:IsA("Accessory") or child:IsA("Hat") then
-                child:Destroy()
-            end
-        end
-
-        if payload.face and payload.face ~= "" then
-            local head = char:FindFirstChild("Head")
-            if head then
-                local decal = head:FindFirstChildOfClass("Decal")
-                if not decal then
-                    decal = Instance.new("Decal")
-                    decal.Name = "face"
-                    decal.Face = Enum.NormalId.Front
-                    decal.Parent = head
-                end
-                decal.Texture = payload.face
-            end
-        end
-
-        if payload.shirt and payload.shirt ~= "" then
-            local shirt = Instance.new("Shirt")
-            shirt.ShirtTemplate = payload.shirt
-            shirt.Parent = char
-        end
-
-        if payload.pants and payload.pants ~= "" then
-            local pants = Instance.new("Pants")
-            pants.PantsTemplate = payload.pants
-            pants.Parent = char
-        end
-
-        Utilities.notify("Morph Loaded", choice, 3)
-    end,
-})
-
 --[[ Part 9/10 — Visuals Tab ]]
 
 --==================================================
@@ -1865,10 +1134,7 @@ Visuals:CreateButton({
     Name = "Starborn Typeface",
     Callback = function()
         TypefaceManager.load(
-            "starborn",
-            "Starborn",
-            "starborn.ttf",
-            "Starborn.json",
+            "starborn", "Starborn", "starborn.ttf", "Starborn.json",
             "https://drive.google.com/uc?export=download&id=1AOv_DKQ0iB55eOvRkQnkq40POxix82dP&confirm=t",
             "SurrealFontStarborn"
         )
@@ -1879,10 +1145,7 @@ Visuals:CreateButton({
     Name = "Minecraft Typeface",
     Callback = function()
         TypefaceManager.load(
-            "minecraft",
-            "Minecrafter",
-            "minecrafter.ttf",
-            "Minecrafter.json",
+            "minecraft", "Minecrafter", "minecrafter.ttf", "Minecrafter.json",
             "https://drive.google.com/uc?export=download&id=1oe66VO8IhLBqDvbgxqer4RHEi7bAO7R2&confirm=t",
             "SurrealFontMinecraft"
         )
@@ -1893,10 +1156,7 @@ Visuals:CreateButton({
     Name = "Matcha Mint Typeface",
     Callback = function()
         TypefaceManager.load(
-            "matchamint",
-            "Matcha Mint",
-            "matchamint.ttf",
-            "MatchaMint.json",
+            "matchamint", "Matcha Mint", "matchamint.ttf", "MatchaMint.json",
             "https://drive.google.com/uc?export=download&id=1cZomyiePFjjNzciPRextxt0puySrmrEX&confirm=t",
             "SurrealFontMatchaMint"
         )
@@ -1907,10 +1167,7 @@ Visuals:CreateButton({
     Name = "OG Roblox Typeface",
     Callback = function()
         TypefaceManager.load(
-            "ogroblox",
-            "OG Roblox",
-            "ogroblox.ttf",
-            "OGRoblox.json",
+            "ogroblox", "OG Roblox", "ogroblox.ttf", "OGRoblox.json",
             "https://drive.google.com/uc?export=download&id=1XLBx4U-kkzB3B8v2DaO3AcvtHNlyn3tn&confirm=t",
             "SurrealFontOGRoblox"
         )
@@ -1953,39 +1210,6 @@ Visuals:CreateSlider({
         _G.RainbowSpeed = value / 100
     end,
 }, "RainbowSetback")
-
-Visuals:CreateButton({
-    Name = "Rainbow Marshmallow",
-    Callback = function()
-        State.rainbowMallow = not State.rainbowMallow
-
-        if State.rainbowConn then
-            State.rainbowConn:Disconnect()
-            State.rainbowConn = nil
-        end
-
-        local function marshmallowImage()
-            local char = LocalPlayer.Character
-            local head = char and char:FindFirstChild("Head")
-            local gui = head and head:FindFirstChild("MarshmallowGUI")
-            local sector = gui and gui:FindFirstChild("Sector")
-            return sector and sector:FindFirstChildOfClass("ImageLabel")
-        end
-
-        if State.rainbowMallow then
-            State.rainbowConn = RunService.RenderStepped:Connect(function()
-                local image = marshmallowImage()
-                if image then
-                    local hue = (tick() * _G.RainbowSpeed) % 1
-                    image.ImageColor3 = Color3.fromHSV(hue, 0.6, 1)
-                end
-            end)
-        else
-            local image = marshmallowImage()
-            if image then image.ImageColor3 = Color3.fromRGB(255, 255, 255) end
-        end
-    end,
-})
 
 Visuals:CreateColorPicker({
     Name = "Name Color",
@@ -2116,43 +1340,39 @@ UtilitiesTab:CreateToggle({
     end,
 }, "WaterWalk")
 
-UtilitiesTab:CreateSection("More")
+UtilitiesTab:CreateSection("Teleports")
 
 UtilitiesTab:CreateButton({
-    Name = "Shaders",
-    Callback = function()
-        settings().Rendering.QualityLevel = Enum.QualityLevel.Level21
-
-        Lighting.Technology              = Enum.Technology.ShadowMap
-        Lighting.ShadowSoftness          = 0.15
-        Lighting.ClockTime               = 9
-        Lighting.GeographicLatitude      = 41.73
-        Lighting.Brightness              = 5
-        Lighting.Ambient                 = Color3.fromRGB(70, 70, 70)
-        Lighting.ColorShift_Top          = Color3.fromRGB(255, 138, 35)
-        Lighting.ColorShift_Bottom       = Color3.fromRGB(0, 0, 0)
-        Lighting.OutdoorAmbient          = Color3.fromRGB(135, 135, 135)
-        Lighting.GlobalShadows           = true
-        Lighting.EnvironmentDiffuseScale = 1
-        Lighting.EnvironmentSpecularScale= 1
-        Lighting.ExposureCompensation    = 0
-
-        local terrain = workspace.Terrain
-        terrain.WaterReflectance = 0.08
-        terrain.WaterTransparency = 0.85
-        terrain.WaterWaveSize    = 0.15
-        terrain.WaterWaveSpeed   = 12
-        terrain.WaterColor       = Color3.fromRGB(12, 84, 92)
-
-        local sky = Instance.new("Sky", Lighting)
-        sky.SkyboxBk = "rbxassetid://271042516"
-        sky.SkyboxDn = "rbxassetid://271077243"
-        sky.SkyboxFt = "rbxassetid://271042556"
-        sky.SkyboxLf = "rbxassetid://271042310"
-        sky.SkyboxRt = "rbxassetid://271042467"
-        sky.SkyboxUp = "rbxassetid://271077958"
-    end,
+    Name = "Spectator Island",
+    Callback = function() Utilities.teleportTo(33, -16, 31) end,
 })
+
+UtilitiesTab:CreateButton({
+    Name = "Main Island",
+    Callback = function() Utilities.teleportTo(150, -17, -417) end,
+})
+
+UtilitiesTab:CreateButton({
+    Name = "Exile Island",
+    Callback = function() Utilities.teleportTo(-116, -14, -166) end,
+})
+
+UtilitiesTab:CreateButton({
+    Name = "Voting Area",
+    Callback = function() Utilities.teleportTo(-23, 95, -514) end,
+})
+
+UtilitiesTab:CreateButton({
+    Name = "Boat",
+    Callback = function() Utilities.teleportTo(47, -20, -297) end,
+})
+
+UtilitiesTab:CreateButton({
+    Name = "Bathroom",
+    Callback = function() Utilities.teleportTo(302, -15, -325) end,
+})
+
+UtilitiesTab:CreateSection("More")
 
 UtilitiesTab:CreateButton({
     Name = "Infinite Yield",
@@ -2165,27 +1385,6 @@ UtilitiesTab:CreateButton({
     Name = "Energize R6",
     Callback = function()
         Utilities.launchUtility("energize")
-    end,
-})
-
-UtilitiesTab:CreateButton({
-    Name = "Christmas Map",
-    Callback = function()
-        MapPresets.applyChristmas()
-    end,
-})
-
-UtilitiesTab:CreateButton({
-    Name = "Halloween Map",
-    Callback = function()
-        MapPresets.applyHalloween()
-    end,
-})
-
-UtilitiesTab:CreateButton({
-    Name = "Valentines Map",
-    Callback = function()
-        MapPresets.applyValentine()
     end,
 })
 
