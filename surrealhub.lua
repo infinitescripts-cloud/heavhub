@@ -279,11 +279,11 @@ local State = {
 
 local Window = Luna:CreateWindow({
     Name            = "Surreal Hub (Camp)",
-    Subtitle        = "Total Roblox Drama",
+    Subtitle        = "Inspired by Syla Hub!",
     LogoID          = "108950683571835",
     LoadingEnabled  = true,
     LoadingTitle    = "Surreal Hub",
-    LoadingSubtitle = "Loading interface...",
+    LoadingSubtitle = "Loading Exploits...",
     ConfigSettings  = {
         RootFolder   = nil,
         ConfigFolder = CONFIG_ROOT,
