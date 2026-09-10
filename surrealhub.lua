@@ -1869,7 +1869,7 @@ Visuals:CreateButton({
             "Starborn",
             "starborn.ttf",
             "Starborn.json",
-            "https://drive.google.com/uc?export=download&id=1k9H8G60p7iaJL4hHcyWEXgWJbONqam8_",
+            "https://drive.google.com/uc?export=download&id=1AOv_DKQ0iB55eOvRkQnkq40POxix82dP&confirm=t",
             "SurrealFontStarborn"
         )
     end,
@@ -1883,16 +1883,37 @@ Visuals:CreateButton({
             "Minecrafter",
             "minecrafter.ttf",
             "Minecrafter.json",
-            "https://drive.google.com/uc?export=download&id=1_LSZQUGrKHzJctxK7Jp8rVRRVWIvdif4",
+            "https://drive.google.com/uc?export=download&id=1oe66VO8IhLBqDvbgxqer4RHEi7bAO7R2&confirm=t",
             "SurrealFontMinecraft"
         )
     end,
 })
 
 Visuals:CreateButton({
-    Name = "Fredoka One Typeface",
+    Name = "Matcha Mint Typeface",
     Callback = function()
-        Utilities.notify("Not Available", "Fredoka One is not currently supported.", 3)
+        TypefaceManager.load(
+            "matchamint",
+            "Matcha Mint",
+            "matchamint.ttf",
+            "MatchaMint.json",
+            "https://drive.google.com/uc?export=download&id=1cZomyiePFjjNzciPRextxt0puySrmrEX&confirm=t",
+            "SurrealFontMatchaMint"
+        )
+    end,
+})
+
+Visuals:CreateButton({
+    Name = "OG Roblox Typeface",
+    Callback = function()
+        TypefaceManager.load(
+            "ogroblox",
+            "OG Roblox",
+            "ogroblox.ttf",
+            "OGRoblox.json",
+            "https://drive.google.com/uc?export=download&id=1XLBx4U-kkzB3B8v2DaO3AcvtHNlyn3tn&confirm=t",
+            "SurrealFontOGRoblox"
+        )
     end,
 })
 
