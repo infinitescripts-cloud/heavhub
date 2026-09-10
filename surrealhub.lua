@@ -8,13 +8,18 @@
 -- LOAD LUNA
 --==================================================
 
-local Luna = loadstring(game:HttpGet(
-    "https://raw.githubusercontent.com/infinitescripts-cloud/Luna-Interface-Suite/master/source.lua_no_interface_hidden.lua",
-    true
-))()
+local Luna
+local ok, result = pcall(function()
+    return loadstring(game:HttpGet(
+        "https://raw.githubusercontent.com/infinitescripts-cloud/Luna-Interface-Suite/master/source.lua_no_interface_hidden.lua",
+        true
+    ))()
+end)
 
-if not Luna then
-    return warn("[Surreal Hub] Failed to load Luna Interface Suite.")
+if ok and result then
+    Luna = result
+else
+    return warn("[Surreal Hub] Failed to load Luna Interface Suite: " .. tostring(result))
 end
 
 --==================================================
@@ -60,12 +65,27 @@ ensureFunction("request",           http_request or (syn and syn.request) or fun
 
 local Utilities = {}
 
+-- Max notification duration (seconds)
+local MAX_NOTIFY_DURATION = 4
+
+-- Safe wrapper — every callback passes through this
+function Utilities.safe(fn)
+    return function(...)
+        local ok, err = pcall(fn, ...)
+        if not ok then
+            warn("[Surreal Hub] Callback error: " .. tostring(err))
+        end
+    end
+end
+
+-- Capped notification helper
 function Utilities.notify(title, content, duration)
+    local safeDuration = math.min(duration or MAX_NOTIFY_DURATION, MAX_NOTIFY_DURATION)
     pcall(function()
         Luna:Notification({
             Title    = title,
             Content  = content,
-            Duration = duration or 4,
+            Duration = safeDuration,
             Image    = "bell-ring",
         })
     end)
@@ -153,7 +173,7 @@ function Utilities.launchUtility(id)
                 local fn = loadstring(chunk)
                 if fn then
                     task.spawn(fn)
-                    Utilities.notify("Utility Loaded", entry.name, 3)
+                    Utilities.notify("Utility Loaded", entry.name, 4)
                 end
             end
             return
@@ -303,7 +323,7 @@ Main:CreateSection("Votes")
 Main:CreateToggle({
     Name = "Notify Votes",
     CurrentValue = false,
-    Callback = function(enabled)
+    Callback = Utilities.safe(function(enabled)
         if State.voteConn then State.voteConn:Disconnect(); State.voteConn = nil end
         if not enabled then return end
 
@@ -315,15 +335,15 @@ Main:CreateToggle({
             local voter = season.Players:FindFirstChild(vote.Value)
             local target = season.Players:FindFirstChild(vote.Name)
             Utilities.notify("Vote Update",
-                (voter and voter.Value or vote.Value) .. " voted for " .. (target and target.Value or vote.Name), 3)
+                (voter and voter.Value or vote.Value) .. " voted for " .. (target and target.Value or vote.Name), 4)
         end)
-    end,
+    end),
 }, "NotifyVotes")
 
 Main:CreateToggle({
     Name = "Expose Votes",
     CurrentValue = false,
-    Callback = function(enabled)
+    Callback = Utilities.safe(function(enabled)
         if State.exposeConn then State.exposeConn:Disconnect(); State.exposeConn = nil end
         if not enabled then return end
 
@@ -339,13 +359,13 @@ Main:CreateToggle({
                     (voter and voter.Value or vote.Value) .. " voted for " .. (target and target.Value or vote.Name))
             end)
         end)
-    end,
+    end),
 }, "ExposeVotes")
 
 Main:CreateToggle({
     Name = "View Jury Votes",
     CurrentValue = false,
-    Callback = function(enabled)
+    Callback = Utilities.safe(function(enabled)
         if State.juryConn then
             for _, conn in ipairs(State.juryConn) do conn:Disconnect() end
             State.juryConn = nil
@@ -366,19 +386,19 @@ Main:CreateToggle({
                 if season.Players:FindFirstChild(vote.Name) then
                     target = season.Players[vote.Name].Value
                 end
-                Utilities.notify("Jury Vote", voter .. " voted for " .. target, 3)
+                Utilities.notify("Jury Vote", voter .. " voted for " .. target, 4)
             end))
         end
 
         for _, juror in ipairs(jury:GetChildren()) do watchJuror(juror) end
         table.insert(State.juryConn, jury.ChildAdded:Connect(watchJuror))
-    end,
+    end),
 }, "ViewJuryVotes")
 
 Main:CreateToggle({
     Name = "View Exile Votes",
     CurrentValue = false,
-    Callback = function(enabled)
+    Callback = Utilities.safe(function(enabled)
         if State.exileConn then State.exileConn:Disconnect(); State.exileConn = nil end
         if not enabled then return end
 
@@ -391,16 +411,16 @@ Main:CreateToggle({
             local voter = RS.Season.Players:FindFirstChild(vote.Value)
             local target = RS.Season.Players:FindFirstChild(vote.Name)
             local message = (voter and voter.Value or vote.Value) .. " voted to exile " .. (target and target.Value or vote.Name)
-            Utilities.notify("Exile Vote", message, 3.5)
+            Utilities.notify("Exile Vote", message, 4)
             print(message)
         end)
-    end,
+    end),
 }, "ViewExileVotes")
 
 Main:CreateToggle({
     Name = "Print Votes",
     CurrentValue = false,
-    Callback = function(enabled)
+    Callback = Utilities.safe(function(enabled)
         if State.printConn then State.printConn:Disconnect(); State.printConn = nil end
         if not enabled then return end
 
@@ -413,7 +433,7 @@ Main:CreateToggle({
             local target = season.Players:FindFirstChild(vote.Name)
             print((voter and voter.Value or vote.Value) .. " voted for " .. (target and target.Value or vote.Name))
         end)
-    end,
+    end),
 }, "PrintVotes")
 
 --==================================================
@@ -424,8 +444,10 @@ Main:CreateSection("Statue")
 
 Main:CreateButton({
     Name = "Find Statue (60% Spawn)",
-    Callback = function()
-        for _, obj in ipairs(workspace.Idols:GetDescendants()) do
+    Callback = Utilities.safe(function()
+        local idols = workspace:FindFirstChild("Idols")
+        if not idols then return end
+        for _, obj in ipairs(idols:GetDescendants()) do
             if obj.Name == "Bag" or obj.Name == "SafetyStatue" then
                 local hit = obj:FindFirstChild("hit")
                 if hit then
@@ -438,12 +460,12 @@ Main:CreateButton({
                 end
             end
         end
-    end,
+    end),
 })
 
 Main:CreateButton({
     Name = "Get Statue on Spawn",
-    Callback = function()
+    Callback = Utilities.safe(function()
         local function tryAttach(obj)
             if not obj:IsA("BasePart") or obj.Name ~= "hit" then return end
             local parent = obj.Parent
@@ -466,22 +488,24 @@ Main:CreateButton({
             State.statueConn = workspace.DescendantAdded:Connect(tryAttach)
         end
         for _, obj in ipairs(workspace:GetDescendants()) do tryAttach(obj) end
-    end,
+    end),
 })
 
 Main:CreateButton({
     Name = "Detect Who has Statue",
-    Callback = function()
-        pcall(function()
-            local idol = RS.Season.Twists.Idol
-            if idol.Value == "" then
-                Utilities.notify("Statue Owner", "No one currently holds the statue.", 4)
-            else
-                local owner = RS.Season.Players:FindFirstChild(idol.Value)
-                Utilities.notify("Statue Owner", (owner and owner.Value or idol.Value) .. " has the statue.", 4)
-            end
-        end)
-    end,
+    Callback = Utilities.safe(function()
+        local season = RS:FindFirstChild("Season")
+        if not season or not season:FindFirstChild("Twists") then return end
+        local idol = season.Twists:FindFirstChild("Idol")
+        if not idol then return end
+
+        if idol.Value == "" then
+            Utilities.notify("Statue Owner", "No one currently holds the statue.", 4)
+        else
+            local owner = season.Players:FindFirstChild(idol.Value)
+            Utilities.notify("Statue Owner", (owner and owner.Value or idol.Value) .. " has the statue.", 4)
+        end
+    end),
 })
 
 --==================================================
@@ -493,34 +517,34 @@ Main:CreateSection("Extras")
 Main:CreateToggle({
     Name = "Auto Detect Round",
     CurrentValue = false,
-    Callback = function(enabled)
+    Callback = Utilities.safe(function(enabled)
         if State.roundConn then State.roundConn:Disconnect(); State.roundConn = nil end
         if not enabled then return end
 
-        pcall(function()
-            local twist = RS.Season.Twists:FindFirstChild("CurrentTwist")
-            if not twist then return end
+        local season = RS:FindFirstChild("Season")
+        if not season or not season:FindFirstChild("Twists") then return end
+        local twist = season.Twists:FindFirstChild("CurrentTwist")
+        if not twist then return end
 
-            State.roundConn = twist:GetPropertyChangedSignal("Value"):Connect(function()
-                local names = {
-                    normal     = "Normal Round",
-                    purge      = "Purge Round",
-                    ["double"] = "Double Elimination",
-                    singleswap = "Sike Round",
-                    exile      = "Exile Vote Round",
-                    votereveal = "Vote Reveal",
-                }
-                if names[twist.Value] then
-                    Utilities.notify("Round Detected", names[twist.Value], 6)
-                end
-            end)
+        State.roundConn = twist:GetPropertyChangedSignal("Value"):Connect(function()
+            local names = {
+                normal     = "Normal Round",
+                purge      = "Purge Round",
+                ["double"] = "Double Elimination",
+                singleswap = "Sike Round",
+                exile      = "Exile Vote Round",
+                votereveal = "Vote Reveal",
+            }
+            if names[twist.Value] then
+                Utilities.notify("Round Detected", names[twist.Value], 4)
+            end
         end)
-    end,
+    end),
 }, "AutoDetectRound")
 
 Main:CreateButton({
     Name = "Detect Teamers",
-    Callback = function()
+    Callback = Utilities.safe(function()
         local season = RS:FindFirstChild("Season")
         local playersFolder = season and season:FindFirstChild("Players")
         if not playersFolder then return end
@@ -539,21 +563,21 @@ Main:CreateButton({
                 if ok and areFriends then
                     found = true
                     Utilities.notify("Teamer Detected!",
-                        gameNameOf(p1) .. " is teaming with " .. gameNameOf(p2), 8)
+                        gameNameOf(p1) .. " is teaming with " .. gameNameOf(p2), 4)
                     task.wait(0.6)
                 end
             end
         end
 
         if not found then
-            Utilities.notify("No Teamers Found", "No teamers are detected here.", 5)
+            Utilities.notify("No Teamers Found", "No friend pairs detected in this lobby.", 4)
         end
-    end,
+    end),
 })
 
 Main:CreateButton({
     Name = "Remove Cutscenes",
-    Callback = function()
+    Callback = Utilities.safe(function()
         local events = RS:FindFirstChild("Events")
         local camEvent = events and events:FindFirstChild("Camera")
         if camEvent then camEvent:Destroy() end
@@ -564,7 +588,7 @@ Main:CreateButton({
             Camera.CameraType = Enum.CameraType.Custom
             Camera.CameraSubject = hum
         end
-    end,
+    end),
 })
 
 --==================================================
@@ -666,14 +690,14 @@ end
 Main:CreateToggle({
     Name = "Global Nameplates",
     CurrentValue = false,
-    Callback = function(enabled)
+    Callback = Utilities.safe(function(enabled)
         State.nameplatesEnabled = enabled
         if enabled then
             NameplateManager.enable()
         else
             NameplateManager.disable()
         end
-    end,
+    end),
 }, "GlobalNameplates")
 
 --[[ Part 7/10 — Challenges Tab ]]
@@ -682,69 +706,77 @@ Challenges:CreateSection("Challenges")
 
 Challenges:CreateButton({
     Name = "Win Obby",
-    Callback = function()
-        local finish = workspace.Assets:FindFirstChild("Finish", true)
+    Callback = Utilities.safe(function()
+        local assets = workspace:FindFirstChild("Assets")
+        if not assets then return end
+        local finish = assets:FindFirstChild("Finish", true)
         if not finish then return end
         finish.CanCollide = false
         finish.Transparency = 1
         task.wait()
         local torso = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Torso")
         if torso then finish.Position = torso.Position end
-    end,
+    end),
 })
 
 Challenges:CreateToggle({
     Name = "Auto Win Obby",
     CurrentValue = false,
-    Callback = function(enabled)
+    Callback = Utilities.safe(function(enabled)
         State.autoWinObby = enabled
         if not enabled then return end
 
         task.spawn(function()
             while State.autoWinObby do
-                local assets = workspace:FindFirstChild("Assets")
-                local finish = assets and assets:FindFirstChild("Finish", true)
-                local root = Utilities.rootPart()
-                if finish and root then
-                    finish.CanCollide = false
-                    finish.Transparency = 1
-                    task.wait()
-                    finish.Position = root.Position
-                end
+                pcall(function()
+                    local assets = workspace:FindFirstChild("Assets")
+                    local finish = assets and assets:FindFirstChild("Finish", true)
+                    local root = Utilities.rootPart()
+                    if finish and root then
+                        finish.CanCollide = false
+                        finish.Transparency = 1
+                        task.wait()
+                        finish.Position = root.Position
+                    end
+                end)
                 task.wait(0.1)
             end
         end)
-    end,
+    end),
 }, "AutoWinObby")
 
 Challenges:CreateButton({
     Name = "Remove all Spleef Studs",
-    Callback = function()
+    Callback = Utilities.safe(function()
         local root = Utilities.rootPart()
         if not root then return end
-        for _, obj in ipairs(workspace.Assets:GetDescendants()) do
+        local assets = workspace:FindFirstChild("Assets")
+        if not assets then return end
+        for _, obj in ipairs(assets:GetDescendants()) do
             if obj.Name == "SpleefPart" then
-                firetouchinterest(root, obj, 0)
+                pcall(firetouchinterest, root, obj, 0)
             end
         end
-    end,
+    end),
 })
 
 Challenges:CreateButton({
     Name = "Finish Pancake",
-    Callback = function()
-        for _, obj in ipairs(workspace.Assets:GetDescendants()) do
+    Callback = Utilities.safe(function()
+        local assets = workspace:FindFirstChild("Assets")
+        if not assets then return end
+        for _, obj in ipairs(assets:GetDescendants()) do
             if obj.Name == LocalPlayer.Name and obj:FindFirstChild("ClickDetector") then
-                for _ = 1, 80 do fireclickdetector(obj.ClickDetector) end
+                for _ = 1, 80 do pcall(fireclickdetector, obj.ClickDetector) end
             end
         end
-    end,
+    end),
 })
 
 Challenges:CreateToggle({
     Name = "Cliff Diving ESP",
     CurrentValue = false,
-    Callback = function(enabled)
+    Callback = Utilities.safe(function(enabled)
         State.cliffESP = enabled
 
         if enabled then
@@ -826,73 +858,78 @@ Challenges:CreateToggle({
             if State.cliffRemovedConn then State.cliffRemovedConn:Disconnect(); State.cliffRemovedConn = nil end
             if State.cliffRenderConn then State.cliffRenderConn:Disconnect(); State.cliffRenderConn = nil end
         end
-    end,
+    end),
 }, "CliffDivingESP")
 
 Challenges:CreateToggle({
     Name = "Auto Get All Coins",
     CurrentValue = false,
-    Callback = function(enabled)
+    Callback = Utilities.safe(function(enabled)
         State.autoCollect = enabled
         if not enabled then return end
 
         task.spawn(function()
             while State.autoCollect do
                 task.wait(0.5)
-                local root = Utilities.rootPart()
-                if root then
-                    for _, obj in ipairs(workspace.Assets:GetDescendants()) do
-                        if (obj.Name == "Coin" or obj.Name == "Gem") and obj:IsA("BasePart") then
-                            obj.CanCollide = false
-                            obj.Position = root.Position
+                pcall(function()
+                    local root = Utilities.rootPart()
+                    local assets = workspace:FindFirstChild("Assets")
+                    if root and assets then
+                        for _, obj in ipairs(assets:GetDescendants()) do
+                            if (obj.Name == "Coin" or obj.Name == "Gem") and obj:IsA("BasePart") then
+                                obj.CanCollide = false
+                                obj.Position = root.Position
+                            end
                         end
                     end
-                end
+                end)
             end
         end)
-    end,
+    end),
 }, "AutoGetCoins")
 
 Challenges:CreateToggle({
     Name = "Answer Math Mania",
     CurrentValue = false,
-    Callback = function(enabled)
+    Callback = Utilities.safe(function(enabled)
         State.autoMath = enabled
         if not enabled then return end
 
         task.spawn(function()
             while State.autoMath do
-                local mathGui = LocalPlayer.PlayerGui:FindFirstChild("MathMania")
-                if mathGui then
-                    for index = 1, 10 do
-                        if not State.autoMath then break end
-                        local question = mathGui:FindFirstChild(tostring(index))
-                        if question and question:FindFirstChild("MainText") then
-                            local expression = question.MainText.Text:gsub("=", ""):gsub("?", ""):gsub(" ", "")
-                            local ok, result = pcall(function()
-                                return loadstring("return " .. expression)()
-                            end)
-                            if ok and result then
-                                question.Box.Text = tostring(result)
-                                local submit = question:FindFirstChild("Enter")
-                                if submit then
-                                    for _, eventName in ipairs({"MouseButton1Click", "MouseButton1Down", "Activated"}) do
-                                        if submit[eventName] then
-                                            for _, conn in pairs(getconnections(submit[eventName])) do
-                                                if conn.Function then conn:Fire() end
+                pcall(function()
+                    local mathGui = LocalPlayer.PlayerGui:FindFirstChild("MathMania")
+                    if mathGui then
+                        for index = 1, 10 do
+                            if not State.autoMath then break end
+                            local question = mathGui:FindFirstChild(tostring(index))
+                            if question and question:FindFirstChild("MainText") and question:FindFirstChild("Box") then
+                                local expression = question.MainText.Text:gsub("=", ""):gsub("?", ""):gsub(" ", "")
+                                local ok, result = pcall(function()
+                                    return loadstring("return " .. expression)()
+                                end)
+                                if ok and result then
+                                    question.Box.Text = tostring(result)
+                                    local submit = question:FindFirstChild("Enter")
+                                    if submit then
+                                        for _, eventName in ipairs({"MouseButton1Click", "MouseButton1Down", "Activated"}) do
+                                            if submit[eventName] then
+                                                for _, conn in pairs(getconnections(submit[eventName])) do
+                                                    if conn.Function then pcall(function() conn:Fire() end) end
+                                                end
                                             end
                                         end
                                     end
+                                    if State.mathDelay > 0 then task.wait(State.mathDelay) end
                                 end
-                                if State.mathDelay > 0 then task.wait(State.mathDelay) end
                             end
                         end
                     end
-                end
+                end)
                 task.wait()
             end
         end)
-    end,
+    end),
 }, "AnswerMathMania")
 
 Challenges:CreateSlider({
@@ -900,14 +937,14 @@ Challenges:CreateSlider({
     Range = {0, 100},
     Increment = 1,
     CurrentValue = 0,
-    Callback = function(value)
+    Callback = Utilities.safe(function(value)
         State.mathDelay = value / 10
-    end,
+    end),
 }, "MathManiaSetback")
 
 Challenges:CreateButton({
     Name = "Win Blockpush",
-    Callback = function()
+    Callback = Utilities.safe(function()
         local root = Utilities.rootPart()
         if not root then return end
 
@@ -925,38 +962,40 @@ Challenges:CreateButton({
                 end
             end
         end
-    end,
+    end),
 })
 
 Challenges:CreateToggle({
     Name = "Dodgeball Invincibility",
     CurrentValue = false,
-    Callback = function(enabled)
+    Callback = Utilities.safe(function(enabled)
         State.dodgeballGuard = enabled
         if not enabled then return end
 
         task.spawn(function()
             local triggered = false
             while State.dodgeballGuard do
-                local assets = workspace:FindFirstChild("Assets")
-                if assets then
-                    local giver = assets:FindFirstChild("DodgeballGiver", true)
-                    if giver and not triggered then
-                        triggered = true
-                        local hum = Utilities.humanoid()
-                        if hum then hum.Health = 0 end
+                pcall(function()
+                    local assets = workspace:FindFirstChild("Assets")
+                    if assets then
+                        local giver = assets:FindFirstChild("DodgeballGiver", true)
+                        if giver and not triggered then
+                            triggered = true
+                            local hum = Utilities.humanoid()
+                            if hum then hum.Health = 0 end
+                        end
+                        if not giver then triggered = false end
                     end
-                    if not giver then triggered = false end
-                end
+                end)
                 task.wait(0.1)
             end
         end)
-    end,
+    end),
 }, "DodgeballInvincibility")
 
 Challenges:CreateButton({
     Name = "Get Dodgeballs",
-    Callback = function()
+    Callback = Utilities.safe(function()
         local root = Utilities.rootPart()
         if not root then return end
 
@@ -965,43 +1004,45 @@ Challenges:CreateButton({
 
         for _, obj in ipairs(assets:GetDescendants()) do
             if obj:IsA("BasePart") and obj.Name:lower():find("dodgeball") then
-                firetouchinterest(root, obj, 0)
-                firetouchinterest(root, obj, 1)
+                pcall(firetouchinterest, root, obj, 0)
+                pcall(firetouchinterest, root, obj, 1)
             end
         end
-    end,
+    end),
 })
 
 Challenges:CreateToggle({
     Name = "Paintball Invincibility",
     CurrentValue = false,
-    Callback = function(enabled)
+    Callback = Utilities.safe(function(enabled)
         State.paintballGuard = enabled
         if not enabled then return end
 
         task.spawn(function()
             local triggered = false
             while State.paintballGuard do
-                local assets = workspace:FindFirstChild("Assets")
-                if assets then
-                    local arena = assets:FindFirstChild("Paintball", true)
-                        or assets:FindFirstChild("PaintballArena", true)
-                    if arena and not triggered then
-                        triggered = true
-                        local hum = Utilities.humanoid()
-                        if hum then hum.Health = 0 end
+                pcall(function()
+                    local assets = workspace:FindFirstChild("Assets")
+                    if assets then
+                        local arena = assets:FindFirstChild("Paintball", true)
+                            or assets:FindFirstChild("PaintballArena", true)
+                        if arena and not triggered then
+                            triggered = true
+                            local hum = Utilities.humanoid()
+                            if hum then hum.Health = 0 end
+                        end
+                        if not arena then triggered = false end
                     end
-                    if not arena then triggered = false end
-                end
+                end)
                 task.wait(0.1)
             end
         end)
-    end,
+    end),
 }, "PaintballInvincibility")
 
 Challenges:CreateButton({
     Name = "Kill Everyone in Swordfight",
-    Callback = function()
+    Callback = Utilities.safe(function()
         local backpack = LocalPlayer:FindFirstChild("Backpack")
         local char = LocalPlayer.Character
         if backpack and char then
@@ -1019,23 +1060,25 @@ Challenges:CreateButton({
         if State.swordFightConn then State.swordFightConn:Disconnect() end
 
         State.swordFightConn = RunService.RenderStepped:Connect(function()
-            local players = Players:GetPlayers()
-            for i = 2, #players do
-                local target = players[i].Character
-                if target and not LocalPlayer:IsFriendsWith(players[i].UserId) then
-                    local char = LocalPlayer.Character
-                    local tool = char and char:FindFirstChildOfClass("Tool")
-                    if tool and tool:FindFirstChild("Handle") then
-                        tool:Activate()
-                        for _, part in ipairs(target:GetChildren()) do
-                            if part:IsA("BasePart") then
-                                firetouchinterest(tool.Handle, part, 0)
-                                firetouchinterest(tool.Handle, part, 1)
+            pcall(function()
+                local players = Players:GetPlayers()
+                for i = 2, #players do
+                    local target = players[i].Character
+                    if target and not LocalPlayer:IsFriendsWith(players[i].UserId) then
+                        local char = LocalPlayer.Character
+                        local tool = char and char:FindFirstChildOfClass("Tool")
+                        if tool and tool:FindFirstChild("Handle") then
+                            tool:Activate()
+                            for _, part in ipairs(target:GetChildren()) do
+                                if part:IsA("BasePart") then
+                                    firetouchinterest(tool.Handle, part, 0)
+                                    firetouchinterest(tool.Handle, part, 1)
+                                end
                             end
                         end
                     end
                 end
-            end
+            end)
         end)
 
         task.delay(1, function()
@@ -1044,7 +1087,7 @@ Challenges:CreateButton({
                 State.swordFightConn = nil
             end
         end)
-    end,
+    end),
 })
 
 --[[ Part 8/10 — Morphs Tab ]]
@@ -1057,12 +1100,20 @@ Morphs:CreateSection("Comebacks")
 
 Morphs:CreateButton({
     Name = "Comeback as Male",
-    Callback = function() RS.Events.Buy:FireServer("Gender", "Male") end,
+    Callback = Utilities.safe(function()
+        local events = RS:FindFirstChild("Events")
+        local buy = events and events:FindFirstChild("Buy")
+        if buy then buy:FireServer("Gender", "Male") end
+    end),
 })
 
 Morphs:CreateButton({
     Name = "Comeback as Female",
-    Callback = function() RS.Events.Buy:FireServer("Gender", "Female") end,
+    Callback = Utilities.safe(function()
+        local events = RS:FindFirstChild("Events")
+        local buy = events and events:FindFirstChild("Buy")
+        if buy then buy:FireServer("Gender", "Female") end
+    end),
 })
 
 --==================================================
@@ -1088,15 +1139,19 @@ Morphs:CreateInput({
     Numeric = false,
     MaxCharacters = nil,
     Enter = false,
-    Callback = function(value) characterNameBuffer = value end,
+    Callback = Utilities.safe(function(value)
+        characterNameBuffer = value or ""
+    end),
 })
 
 Morphs:CreateButton({
     Name = "Buy Character (@60)",
-    Callback = function()
+    Callback = Utilities.safe(function()
         if characterNameBuffer == "" then return end
-        RS.Events.Buy:FireServer("Character", characterNameBuffer)
-    end,
+        local events = RS:FindFirstChild("Events")
+        local buy = events and events:FindFirstChild("Buy")
+        if buy then buy:FireServer("Character", characterNameBuffer) end
+    end),
 })
 
 Morphs:CreateDropdown({
@@ -1104,22 +1159,24 @@ Morphs:CreateDropdown({
     Options = {"None", "Verified", "Premium", "Robux"},
     CurrentOption = {"None"},
     MultipleOptions = false,
-    Callback = function(value)
+    Callback = Utilities.safe(function(value)
         local choice = type(value) == "table" and (value[1] or value.Option) or value
         selectedSymbol = SYMBOL_MAP[choice] or ""
-    end,
+    end),
 })
 
 Morphs:CreateButton({
     Name = "Buy Symbol (@60)",
-    Callback = function()
+    Callback = Utilities.safe(function()
         if characterNameBuffer == "" then return end
         local final = characterNameBuffer
         if selectedSymbol ~= "" then
             final = characterNameBuffer .. " " .. selectedSymbol
         end
-        RS.Events.Buy:FireServer("Character", final)
-    end,
+        local events = RS:FindFirstChild("Events")
+        local buy = events and events:FindFirstChild("Buy")
+        if buy then buy:FireServer("Character", final) end
+    end),
 })
 
 --[[ Part 9/10 — Visuals Tab ]]
@@ -1132,46 +1189,46 @@ Visuals:CreateSection("Typefaces")
 
 Visuals:CreateButton({
     Name = "Starborn Typeface",
-    Callback = function()
+    Callback = Utilities.safe(function()
         TypefaceManager.load(
             "starborn", "Starborn", "starborn.ttf", "Starborn.json",
             "https://drive.google.com/uc?export=download&id=1AOv_DKQ0iB55eOvRkQnkq40POxix82dP&confirm=t",
             "SurrealFontStarborn"
         )
-    end,
+    end),
 })
 
 Visuals:CreateButton({
     Name = "Minecraft Typeface",
-    Callback = function()
+    Callback = Utilities.safe(function()
         TypefaceManager.load(
             "minecraft", "Minecrafter", "minecrafter.ttf", "Minecrafter.json",
             "https://drive.google.com/uc?export=download&id=1oe66VO8IhLBqDvbgxqer4RHEi7bAO7R2&confirm=t",
             "SurrealFontMinecraft"
         )
-    end,
+    end),
 })
 
 Visuals:CreateButton({
     Name = "Matcha Mint Typeface",
-    Callback = function()
+    Callback = Utilities.safe(function()
         TypefaceManager.load(
             "matchamint", "Matcha Mint", "matchamint.ttf", "MatchaMint.json",
             "https://drive.google.com/uc?export=download&id=1cZomyiePFjjNzciPRextxt0puySrmrEX&confirm=t",
             "SurrealFontMatchaMint"
         )
-    end,
+    end),
 })
 
 Visuals:CreateButton({
     Name = "OG Roblox Typeface",
-    Callback = function()
+    Callback = Utilities.safe(function()
         TypefaceManager.load(
             "ogroblox", "OG Roblox", "ogroblox.ttf", "OGRoblox.json",
             "https://drive.google.com/uc?export=download&id=1XLBx4U-kkzB3B8v2DaO3AcvtHNlyn3tn&confirm=t",
             "SurrealFontOGRoblox"
         )
-    end,
+    end),
 })
 
 --==================================================
@@ -1187,18 +1244,18 @@ Visuals:CreateInput({
     Numeric = false,
     MaxCharacters = nil,
     Enter = false,
-    Callback = function(value)
-        _G.CustomName = value
+    Callback = Utilities.safe(function(value)
+        _G.CustomName = value or ""
         _G.UseCustomName = (value ~= "")
-    end,
+    end),
 })
 
 Visuals:CreateToggle({
     Name = "Rainbow Name",
     CurrentValue = false,
-    Callback = function(enabled)
+    Callback = Utilities.safe(function(enabled)
         _G.RainbowMode = enabled
-    end,
+    end),
 }, "RainbowName")
 
 Visuals:CreateSlider({
@@ -1206,18 +1263,18 @@ Visuals:CreateSlider({
     Range = {0, 100},
     Increment = 1,
     CurrentValue = 50,
-    Callback = function(value)
+    Callback = Utilities.safe(function(value)
         _G.RainbowSpeed = value / 100
-    end,
+    end),
 }, "RainbowSetback")
 
 Visuals:CreateColorPicker({
     Name = "Name Color",
     Color = Color3.fromRGB(255, 255, 255),
-    Callback = function(value)
+    Callback = Utilities.safe(function(value)
         _G.StaticColor = value
         _G.StaticColorCustom = true
-    end,
+    end),
 })
 
 --==================================================
@@ -1225,27 +1282,29 @@ Visuals:CreateColorPicker({
 --==================================================
 
 RunService.RenderStepped:Connect(function()
-    local char = LocalPlayer.Character
-    if not char then return end
-    for _, obj in ipairs(char:GetDescendants()) do
-        if obj:IsA("TextLabel") or obj:IsA("TextButton") then
-            if _G.UseCustomName and _G.CustomName ~= "" then
-                obj.Text = _G.CustomName
+    pcall(function()
+        local char = LocalPlayer.Character
+        if not char then return end
+        for _, obj in ipairs(char:GetDescendants()) do
+            if obj:IsA("TextLabel") or obj:IsA("TextButton") then
+                if _G.UseCustomName and _G.CustomName ~= "" then
+                    obj.Text = _G.CustomName
+                end
+                if _G.SelectedFont then
+                    obj.Font = _G.SelectedFont
+                end
+                obj.TextScaled = true
+                if _G.RainbowMode then
+                    local hue = (tick() * _G.RainbowSpeed) % 1
+                    obj.TextColor3 = Color3.fromHSV(hue, 0.6, 1)
+                elseif _G.StaticColorCustom then
+                    obj.TextColor3 = _G.StaticColor
+                end
+                obj.TextStrokeTransparency = 0.5
+                obj.BackgroundTransparency = 1
             end
-            if _G.SelectedFont then
-                obj.Font = _G.SelectedFont
-            end
-            obj.TextScaled = true
-            if _G.RainbowMode then
-                local hue = (tick() * _G.RainbowSpeed) % 1
-                obj.TextColor3 = Color3.fromHSV(hue, 0.6, 1)
-            elseif _G.StaticColorCustom then
-                obj.TextColor3 = _G.StaticColor
-            end
-            obj.TextStrokeTransparency = 0.5
-            obj.BackgroundTransparency = 1
         end
-    end
+    end)
 end)
 
 --[[ Part 10/10 — Utilities Tab & Initialize ]]
@@ -1304,7 +1363,7 @@ function BarrierManager.clear()
             removed = removed + 1
         end
     end
-    Utilities.notify("Barriers Cleared", removed .. " obstacle(s) removed.", 3)
+    Utilities.notify("Barriers Cleared", removed .. " obstacle(s) removed.", 4)
 end
 
 --==================================================
@@ -1315,77 +1374,77 @@ UtilitiesTab:CreateSection("Utility")
 
 UtilitiesTab:CreateButton({
     Name = "FE Genesis Sniper",
-    Callback = function()
+    Callback = Utilities.safe(function()
         Utilities.launchUtility("genesis_sniper")
-    end,
+    end),
 })
 
 UtilitiesTab:CreateButton({
     Name = "Barrier Cleanup",
-    Callback = function()
+    Callback = Utilities.safe(function()
         BarrierManager.clear()
-    end,
+    end),
 })
 
 UtilitiesTab:CreateToggle({
     Name = "Water Walk",
     CurrentValue = false,
-    Callback = function(enabled)
+    Callback = Utilities.safe(function(enabled)
         State.waterWalkEnabled = enabled
         WaterManager.setEnabled(enabled)
 
         if enabled then
-            Utilities.notify("Water Walk", "Surface enabled — you will not drown.", 3)
+            Utilities.notify("Water Walk", "Surface enabled — you will not drown.", 4)
         end
-    end,
+    end),
 }, "WaterWalk")
 
 UtilitiesTab:CreateSection("Teleports")
 
 UtilitiesTab:CreateButton({
     Name = "Spectator Island",
-    Callback = function() Utilities.teleportTo(33, -16, 31) end,
+    Callback = Utilities.safe(function() Utilities.teleportTo(33, -16, 31) end),
 })
 
 UtilitiesTab:CreateButton({
     Name = "Main Island",
-    Callback = function() Utilities.teleportTo(150, -17, -417) end,
+    Callback = Utilities.safe(function() Utilities.teleportTo(150, -17, -417) end),
 })
 
 UtilitiesTab:CreateButton({
     Name = "Exile Island",
-    Callback = function() Utilities.teleportTo(-116, -14, -166) end,
+    Callback = Utilities.safe(function() Utilities.teleportTo(-116, -14, -166) end),
 })
 
 UtilitiesTab:CreateButton({
     Name = "Voting Area",
-    Callback = function() Utilities.teleportTo(-23, 95, -514) end,
+    Callback = Utilities.safe(function() Utilities.teleportTo(-23, 95, -514) end),
 })
 
 UtilitiesTab:CreateButton({
     Name = "Boat",
-    Callback = function() Utilities.teleportTo(47, -20, -297) end,
+    Callback = Utilities.safe(function() Utilities.teleportTo(47, -20, -297) end),
 })
 
 UtilitiesTab:CreateButton({
     Name = "Bathroom",
-    Callback = function() Utilities.teleportTo(302, -15, -325) end,
+    Callback = Utilities.safe(function() Utilities.teleportTo(302, -15, -325) end),
 })
 
 UtilitiesTab:CreateSection("More")
 
 UtilitiesTab:CreateButton({
     Name = "Infinite Yield",
-    Callback = function()
+    Callback = Utilities.safe(function()
         Utilities.launchUtility("infinite_yield")
-    end,
+    end),
 })
 
 UtilitiesTab:CreateButton({
     Name = "Energize R6",
-    Callback = function()
+    Callback = Utilities.safe(function()
         Utilities.launchUtility("energize")
-    end,
+    end),
 })
 
 --==================================================
