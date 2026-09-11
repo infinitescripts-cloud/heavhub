@@ -1,17 +1,17 @@
 --[[
     Surreal Hub
     Total Roblox Drama — Camp
-    Interface: Luna
+    Interface: Luna (Patched — Full Click Inputs)
 ]]
 
 --==================================================
--- LOAD LUNA
+-- LOAD PATCHED LUNA
 --==================================================
 
 local Luna
 local ok, result = pcall(function()
     return loadstring(game:HttpGet(
-        "https://raw.githubusercontent.com/infinitescripts-cloud/Luna-Interface-Suite/master/source.lua_no_interface_hidden.lua",
+        "https://raw.githubusercontent.com/infinitescripts-cloud/Luna-Interface-Suite/master/LunaUI_inputs_full_click.lua",
         true
     ))()
 end)
@@ -38,6 +38,28 @@ local LocalPlayer = Players.LocalPlayer
 local Camera      = workspace.CurrentCamera
 local RS          = ReplicatedStorage
 local CONFIG_ROOT = "Surreal Hub"
+
+--==================================================
+-- EXECUTOR FALLBACKS
+--==================================================
+
+local function ensureFunction(name, fallback)
+    local env = getfenv(0)
+    if type(env[name]) ~= "function" then env[name] = fallback end
+end
+
+ensureFunction("writefile",         function() end)
+ensureFunction("readfile",          function() return "" end)
+ensureFunction("makefolder",        function() end)
+ensureFunction("isfile",            function() return false end)
+ensureFunction("isfolder",          function() return false end)
+ensureFunction("listfiles",         function() return {} end)
+ensureFunction("delfile",           function() end)
+ensureFunction("getcustomasset",    function() return "" end)
+ensureFunction("firetouchinterest", function() end)
+ensureFunction("fireclickdetector", function() end)
+ensureFunction("getconnections",    function() return {} end)
+ensureFunction("request",           http_request or (syn and syn.request) or function() end)
 
 --==================================================
 -- EXECUTOR FALLBACKS
