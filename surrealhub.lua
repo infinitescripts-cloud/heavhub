@@ -61,36 +61,12 @@ ensureFunction("fireclickdetector", function() end)
 ensureFunction("getconnections",    function() return {} end)
 ensureFunction("request",           http_request or (syn and syn.request) or function() end)
 
---==================================================
--- EXECUTOR FALLBACKS
---==================================================
-
-local function ensureFunction(name, fallback)
-    local env = getfenv(0)
-    if type(env[name]) ~= "function" then env[name] = fallback end
-end
-
-ensureFunction("writefile",         function() end)
-ensureFunction("readfile",          function() return "" end)
-ensureFunction("makefolder",        function() end)
-ensureFunction("isfile",            function() return false end)
-ensureFunction("isfolder",          function() return false end)
-ensureFunction("listfiles",         function() return {} end)
-ensureFunction("delfile",           function() end)
-ensureFunction("getcustomasset",    function() return "" end)
-ensureFunction("firetouchinterest", function() end)
-ensureFunction("fireclickdetector", function() end)
-ensureFunction("getconnections",    function() return {} end)
-ensureFunction("request",           http_request or (syn and syn.request) or function() end)
-
 --[[ Part 2/10 — Utilities Module ]]
 
 local Utilities = {}
 
--- Max notification duration (seconds)
 local MAX_NOTIFY_DURATION = 4
 
--- Safe wrapper — every callback passes through this
 function Utilities.safe(fn)
     return function(...)
         local ok, err = pcall(fn, ...)
@@ -100,7 +76,6 @@ function Utilities.safe(fn)
     end
 end
 
--- Capped notification helper
 function Utilities.notify(title, content, duration)
     local safeDuration = math.min(duration or MAX_NOTIFY_DURATION, MAX_NOTIFY_DURATION)
     pcall(function()
@@ -301,7 +276,7 @@ local State = {
 
 local Window = Luna:CreateWindow({
     Name            = "Surreal Hub (Camp)",
-    Subtitle        = "by surre4L",
+    Subtitle        = "by surrre4L",
     LogoID          = "108950683571835",
     LoadingEnabled  = true,
     LoadingTitle    = "Surreal Hub",
@@ -344,6 +319,7 @@ Main:CreateSection("Votes")
 
 Main:CreateToggle({
     Name = "Notify Votes",
+    Description = "notifies you when someone casts a vote",
     CurrentValue = false,
     Callback = Utilities.safe(function(enabled)
         if State.voteConn then State.voteConn:Disconnect(); State.voteConn = nil end
@@ -363,7 +339,8 @@ Main:CreateToggle({
 }, "NotifyVotes")
 
 Main:CreateToggle({
-    Name = "Expose Votes",
+    Name = "Announce Votes",
+    Description = "says every cast vote in the general chat",
     CurrentValue = false,
     Callback = Utilities.safe(function(enabled)
         if State.exposeConn then State.exposeConn:Disconnect(); State.exposeConn = nil end
@@ -386,6 +363,7 @@ Main:CreateToggle({
 
 Main:CreateToggle({
     Name = "View Jury Votes",
+    Description = "notifies whena juror votes a finalist",
     CurrentValue = false,
     Callback = Utilities.safe(function(enabled)
         if State.juryConn then
@@ -419,6 +397,7 @@ Main:CreateToggle({
 
 Main:CreateToggle({
     Name = "View Exile Votes",
+    Description = "see who will be voted to exile",
     CurrentValue = false,
     Callback = Utilities.safe(function(enabled)
         if State.exileConn then State.exileConn:Disconnect(); State.exileConn = nil end
@@ -441,6 +420,7 @@ Main:CreateToggle({
 
 Main:CreateToggle({
     Name = "Print Votes",
+    Description = "Logs every votes in console (notify votes only)",
     CurrentValue = false,
     Callback = Utilities.safe(function(enabled)
         if State.printConn then State.printConn:Disconnect(); State.printConn = nil end
@@ -466,6 +446,7 @@ Main:CreateSection("Statue")
 
 Main:CreateButton({
     Name = "Find Statue (60% Spawn)",
+    Description = "get the statue",
     Callback = Utilities.safe(function()
         local idols = workspace:FindFirstChild("Idols")
         if not idols then return end
@@ -487,6 +468,7 @@ Main:CreateButton({
 
 Main:CreateButton({
     Name = "Get Statue on Spawn",
+    Description = "gives you the statue the moment u spawn",
     Callback = Utilities.safe(function()
         local function tryAttach(obj)
             if not obj:IsA("BasePart") or obj.Name ~= "hit" then return end
@@ -515,6 +497,7 @@ Main:CreateButton({
 
 Main:CreateButton({
     Name = "Detect Who has Statue",
+    Description = "notifies who has the statue",
     Callback = Utilities.safe(function()
         local season = RS:FindFirstChild("Season")
         if not season or not season:FindFirstChild("Twists") then return end
@@ -538,6 +521,7 @@ Main:CreateSection("Extras")
 
 Main:CreateToggle({
     Name = "Auto Detect Round",
+    Description = "detects the round twist",
     CurrentValue = false,
     Callback = Utilities.safe(function(enabled)
         if State.roundConn then State.roundConn:Disconnect(); State.roundConn = nil end
@@ -566,6 +550,7 @@ Main:CreateToggle({
 
 Main:CreateButton({
     Name = "Detect Teamers",
+    Description = "scans every account if they have friends on the same lobby",
     Callback = Utilities.safe(function()
         local season = RS:FindFirstChild("Season")
         local playersFolder = season and season:FindFirstChild("Players")
@@ -592,13 +577,14 @@ Main:CreateButton({
         end
 
         if not found then
-            Utilities.notify("No Teamers Found", "No friend pairs detected in this lobby.", 4)
+            Utilities.notify("No Teamers Found", "No teamers detected at this round", 4)
         end
     end),
 })
 
 Main:CreateButton({
     Name = "Remove Cutscenes",
+    Description = "just goes to your camera immediately",
     Callback = Utilities.safe(function()
         local events = RS:FindFirstChild("Events")
         local camEvent = events and events:FindFirstChild("Camera")
@@ -711,6 +697,7 @@ end
 
 Main:CreateToggle({
     Name = "Global Nameplates",
+    Description = "see everyone's display names",
     CurrentValue = false,
     Callback = Utilities.safe(function(enabled)
         State.nameplatesEnabled = enabled
@@ -728,6 +715,7 @@ Challenges:CreateSection("Challenges")
 
 Challenges:CreateButton({
     Name = "Win Obby",
+    Description = "makes you win an Obby",
     Callback = Utilities.safe(function()
         local assets = workspace:FindFirstChild("Assets")
         if not assets then return end
@@ -743,6 +731,7 @@ Challenges:CreateButton({
 
 Challenges:CreateToggle({
     Name = "Auto Win Obby",
+    Description = "win every Obby without pressing win Obby",
     CurrentValue = false,
     Callback = Utilities.safe(function(enabled)
         State.autoWinObby = enabled
@@ -769,6 +758,7 @@ Challenges:CreateToggle({
 
 Challenges:CreateButton({
     Name = "Remove all Spleef Studs",
+    Description = "makes Spleef have no studs and everyone falls",
     Callback = Utilities.safe(function()
         local root = Utilities.rootPart()
         if not root then return end
@@ -784,6 +774,7 @@ Challenges:CreateButton({
 
 Challenges:CreateButton({
     Name = "Finish Pancake",
+    Description = "Rapidly clicks your pancake",
     Callback = Utilities.safe(function()
         local assets = workspace:FindFirstChild("Assets")
         if not assets then return end
@@ -797,6 +788,7 @@ Challenges:CreateButton({
 
 Challenges:CreateToggle({
     Name = "Cliff Diving ESP",
+    Description = "automatically find the finish line",
     CurrentValue = false,
     Callback = Utilities.safe(function(enabled)
         State.cliffESP = enabled
@@ -885,6 +877,7 @@ Challenges:CreateToggle({
 
 Challenges:CreateToggle({
     Name = "Auto Get All Coins",
+    Description = "teleports every coin and gem to you",
     CurrentValue = false,
     Callback = Utilities.safe(function(enabled)
         State.autoCollect = enabled
@@ -912,6 +905,7 @@ Challenges:CreateToggle({
 
 Challenges:CreateToggle({
     Name = "Answer Math Mania",
+    Description = "answer every question easily",
     CurrentValue = false,
     Callback = Utilities.safe(function(enabled)
         State.autoMath = enabled
@@ -956,6 +950,7 @@ Challenges:CreateToggle({
 
 Challenges:CreateSlider({
     Name = "Math Mania Setback",
+    Description = "Adds a delay",
     Range = {0, 100},
     Increment = 1,
     CurrentValue = 0,
@@ -966,6 +961,7 @@ Challenges:CreateSlider({
 
 Challenges:CreateButton({
     Name = "Win Blockpush",
+    Description = "teleports block to finishing line",
     Callback = Utilities.safe(function()
         local root = Utilities.rootPart()
         if not root then return end
@@ -989,6 +985,7 @@ Challenges:CreateButton({
 
 Challenges:CreateToggle({
     Name = "Dodgeball Invincibility",
+    Description = "resets you (you do not die)",
     CurrentValue = false,
     Callback = Utilities.safe(function(enabled)
         State.dodgeballGuard = enabled
@@ -1017,6 +1014,7 @@ Challenges:CreateToggle({
 
 Challenges:CreateButton({
     Name = "Get Dodgeballs",
+    Description = "get every dodgeball",
     Callback = Utilities.safe(function()
         local root = Utilities.rootPart()
         if not root then return end
@@ -1035,6 +1033,7 @@ Challenges:CreateButton({
 
 Challenges:CreateToggle({
     Name = "Paintball Invincibility",
+    Description = "resets you b4 the game start (you do not die)",
     CurrentValue = false,
     Callback = Utilities.safe(function(enabled)
         State.paintballGuard = enabled
@@ -1064,6 +1063,7 @@ Challenges:CreateToggle({
 
 Challenges:CreateButton({
     Name = "Kill Everyone in Swordfight",
+    Description = "expands hitbox and kills everyone",
     Callback = Utilities.safe(function()
         local backpack = LocalPlayer:FindFirstChild("Backpack")
         local char = LocalPlayer.Character
@@ -1122,6 +1122,7 @@ Morphs:CreateSection("Comebacks")
 
 Morphs:CreateButton({
     Name = "Comeback as Male",
+    Description = "rejoin as a blob of male skin",
     Callback = Utilities.safe(function()
         local events = RS:FindFirstChild("Events")
         local buy = events and events:FindFirstChild("Buy")
@@ -1131,6 +1132,7 @@ Morphs:CreateButton({
 
 Morphs:CreateButton({
     Name = "Comeback as Female",
+    Description = "rejoin as a blob of skin",
     Callback = Utilities.safe(function()
         local events = RS:FindFirstChild("Events")
         local buy = events and events:FindFirstChild("Buy")
@@ -1156,6 +1158,7 @@ local SYMBOL_MAP = {
 
 Morphs:CreateInput({
     Name = "Character Name",
+    Description = "type what you character name",
     PlaceholderText = "Enter character name...",
     CurrentValue = "",
     Numeric = false,
@@ -1168,6 +1171,7 @@ Morphs:CreateInput({
 
 Morphs:CreateButton({
     Name = "Buy Character (@60)",
+    Description = "purchases the custom character",
     Callback = Utilities.safe(function()
         if characterNameBuffer == "" then return end
         local events = RS:FindFirstChild("Events")
@@ -1178,6 +1182,7 @@ Morphs:CreateButton({
 
 Morphs:CreateDropdown({
     Name = "Select Symbol",
+    Description = "pick an ugly symbols",
     Options = {"None", "Verified", "Premium", "Robux"},
     CurrentOption = {"None"},
     MultipleOptions = false,
@@ -1189,6 +1194,7 @@ Morphs:CreateDropdown({
 
 Morphs:CreateButton({
     Name = "Buy Symbol (@60)",
+    Description = "applies it to your name",
     Callback = Utilities.safe(function()
         if characterNameBuffer == "" then return end
         local final = characterNameBuffer
@@ -1211,6 +1217,7 @@ Visuals:CreateSection("Typefaces")
 
 Visuals:CreateButton({
     Name = "Starborn Typeface",
+    Description = "starborn try this thing",
     Callback = Utilities.safe(function()
         TypefaceManager.load(
             "starborn", "Starborn", "starborn.ttf", "Starborn.json",
@@ -1222,6 +1229,7 @@ Visuals:CreateButton({
 
 Visuals:CreateButton({
     Name = "Minecraft Typeface",
+    Description = "minecrafter if you are larper",
     Callback = Utilities.safe(function()
         TypefaceManager.load(
             "minecraft", "Minecrafter", "minecrafter.ttf", "Minecrafter.json",
@@ -1233,6 +1241,7 @@ Visuals:CreateButton({
 
 Visuals:CreateButton({
     Name = "Matcha Mint Typeface",
+    Description = "labubu matcha font",
     Callback = Utilities.safe(function()
         TypefaceManager.load(
             "matchamint", "Matcha Mint", "matchamint.ttf", "MatchaMint.json",
@@ -1244,6 +1253,7 @@ Visuals:CreateButton({
 
 Visuals:CreateButton({
     Name = "OG Roblox Typeface",
+    Description = "classic Roblox font",
     Callback = Utilities.safe(function()
         TypefaceManager.load(
             "ogroblox", "OG Roblox", "ogroblox.ttf", "OGRoblox.json",
@@ -1259,8 +1269,20 @@ Visuals:CreateButton({
 
 Visuals:CreateSection("Custom")
 
+_G.CustomName        = _G.CustomName or ""
+_G.UseCustomName     = _G.UseCustomName or false
+_G.SelectedFont      = _G.SelectedFont or nil
+_G.RainbowMode       = _G.RainbowMode or false
+_G.RainbowSpeed      = _G.RainbowSpeed or 0.5
+_G.StaticColor       = _G.StaticColor or Color3.fromRGB(255, 255, 255)
+_G.StaticColorCustom = false
+
+local nameColorArmed = false
+task.delay(2, function() nameColorArmed = true end)
+
 Visuals:CreateInput({
     Name = "Character Name",
+    Description = "replace your character name no tags",
     PlaceholderText = "Enter character name...",
     CurrentValue = "",
     Numeric = false,
@@ -1268,12 +1290,13 @@ Visuals:CreateInput({
     Enter = false,
     Callback = Utilities.safe(function(value)
         _G.CustomName = value or ""
-        _G.UseCustomName = (value ~= "")
+        _G.UseCustomName = (_G.CustomName ~= "")
     end),
 })
 
 Visuals:CreateToggle({
     Name = "Rainbow Name",
+    Description = "rainbow rgb in name",
     CurrentValue = false,
     Callback = Utilities.safe(function(enabled)
         _G.RainbowMode = enabled
@@ -1282,6 +1305,7 @@ Visuals:CreateToggle({
 
 Visuals:CreateSlider({
     Name = "Rainbow Setback",
+    Description = "how fast rainbow name",
     Range = {0, 100},
     Increment = 1,
     CurrentValue = 50,
@@ -1292,10 +1316,21 @@ Visuals:CreateSlider({
 
 Visuals:CreateColorPicker({
     Name = "Name Color",
+    Description = "Picks a fixed color for your character's name.",
     Color = Color3.fromRGB(255, 255, 255),
     Callback = Utilities.safe(function(value)
+        if not nameColorArmed then return end
         _G.StaticColor = value
         _G.StaticColorCustom = true
+    end),
+})
+
+Visuals:CreateButton({
+    Name = "Reset to Team Color",
+    Description = "resets your name color to original",
+    Callback = Utilities.safe(function()
+        _G.StaticColorCustom = false
+        Utilities.notify("Name Color", "Reverted to team color.", 4)
     end),
 })
 
@@ -1305,23 +1340,34 @@ Visuals:CreateColorPicker({
 
 RunService.RenderStepped:Connect(function()
     pcall(function()
+        local anyCustomActive = _G.UseCustomName
+            or _G.SelectedFont
+            or _G.RainbowMode
+            or _G.StaticColorCustom
+
+        if not anyCustomActive then return end
+
         local char = LocalPlayer.Character
         if not char then return end
+
         for _, obj in ipairs(char:GetDescendants()) do
             if obj:IsA("TextLabel") or obj:IsA("TextButton") then
                 if _G.UseCustomName and _G.CustomName ~= "" then
                     obj.Text = _G.CustomName
                 end
+
                 if _G.SelectedFont then
                     obj.Font = _G.SelectedFont
                 end
-                obj.TextScaled = true
+
                 if _G.RainbowMode then
                     local hue = (tick() * _G.RainbowSpeed) % 1
                     obj.TextColor3 = Color3.fromHSV(hue, 0.6, 1)
                 elseif _G.StaticColorCustom then
                     obj.TextColor3 = _G.StaticColor
                 end
+
+                obj.TextScaled = true
                 obj.TextStrokeTransparency = 0.5
                 obj.BackgroundTransparency = 1
             end
@@ -1396,6 +1442,7 @@ UtilitiesTab:CreateSection("Utility")
 
 UtilitiesTab:CreateButton({
     Name = "FE Genesis Sniper",
+    Description = "restart finale",
     Callback = Utilities.safe(function()
         Utilities.launchUtility("genesis_sniper")
     end),
@@ -1403,6 +1450,7 @@ UtilitiesTab:CreateButton({
 
 UtilitiesTab:CreateButton({
     Name = "Barrier Cleanup",
+    Description = "removes every barrier",
     Callback = Utilities.safe(function()
         BarrierManager.clear()
     end),
@@ -1410,13 +1458,14 @@ UtilitiesTab:CreateButton({
 
 UtilitiesTab:CreateToggle({
     Name = "Water Walk",
+    Description = "makes you like jesus",
     CurrentValue = false,
     Callback = Utilities.safe(function(enabled)
         State.waterWalkEnabled = enabled
         WaterManager.setEnabled(enabled)
 
         if enabled then
-            Utilities.notify("Water Walk", "Surface enabled — you will not drown.", 4)
+            Utilities.notify("Water Walk", "enabled", 4)
         end
     end),
 }, "WaterWalk")
@@ -1425,31 +1474,37 @@ UtilitiesTab:CreateSection("Teleports")
 
 UtilitiesTab:CreateButton({
     Name = "Spectator Island",
+    Description = "don't go to loser land",
     Callback = Utilities.safe(function() Utilities.teleportTo(33, -16, 31) end),
 })
 
 UtilitiesTab:CreateButton({
     Name = "Main Island",
+    Description = "main island",
     Callback = Utilities.safe(function() Utilities.teleportTo(150, -17, -417) end),
 })
 
 UtilitiesTab:CreateButton({
     Name = "Exile Island",
+    Description = "go to exile",
     Callback = Utilities.safe(function() Utilities.teleportTo(-116, -14, -166) end),
 })
 
 UtilitiesTab:CreateButton({
     Name = "Voting Area",
+    Description = "go here for voting (remove barrier first)",
     Callback = Utilities.safe(function() Utilities.teleportTo(-23, 95, -514) end),
 })
 
 UtilitiesTab:CreateButton({
     Name = "Boat",
+    Description = "do u want to be eliminated",
     Callback = Utilities.safe(function() Utilities.teleportTo(47, -20, -297) end),
 })
 
 UtilitiesTab:CreateButton({
     Name = "Bathroom",
+    Description = "tps you to bathroom",
     Callback = Utilities.safe(function() Utilities.teleportTo(302, -15, -325) end),
 })
 
@@ -1457,6 +1512,7 @@ UtilitiesTab:CreateSection("More")
 
 UtilitiesTab:CreateButton({
     Name = "Infinite Yield",
+    Description = "many features and bang",
     Callback = Utilities.safe(function()
         Utilities.launchUtility("infinite_yield")
     end),
@@ -1464,6 +1520,7 @@ UtilitiesTab:CreateButton({
 
 UtilitiesTab:CreateButton({
     Name = "Energize R6",
+    Description = "fe animations hahaha",
     Callback = Utilities.safe(function()
         Utilities.launchUtility("energize")
     end),
